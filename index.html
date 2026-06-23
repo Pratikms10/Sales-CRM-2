@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales CRM</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Login View -->
+  <div id="login-view" class="login-view">
+    <div class="login-card">
+      <h2>Sales CRM</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="role-select">Select Role to Login</label>
+          <select id="role-select" class="form-control">
+            <option value="manager">Manager (Full Access)</option>
+            <option value="team_lead">Team Lead (Team Access)</option>
+            <option value="employee">Employee (Own Access)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+  <div id="app-view" class="app-container hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Sales CRM</h2>
+        <div id="current-user-info" class="user-info"></div>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item active" data-tab="dashboard">Dashboard</li>
+        <li class="nav-item" data-tab="leads">Leads</li>
+        <li class="nav-item" data-tab="pipeline">Pipeline</li>
+        <li class="nav-item" data-tab="sourcing">Requirements & Sourcing</li>
+        <li class="nav-item" data-tab="deals">Deals</li>
+        <li class="nav-item" data-tab="database">Database</li>
+        <li class="nav-item" data-tab="reports">Reports / MIS</li>
+        <li class="nav-item" data-tab="settings">Settings</li>
+      </ul>
+      <div style="padding: 16px;">
+        <button id="logout-btn" class="btn btn-secondary" style="width: 100%;">Log Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar">
+        <h2 id="page-title">Dashboard</h2>
+        <div>
+          <button class="btn btn-primary" id="add-record-btn">+ New Record</button>
+        </div>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="tab-dashboard" class="tab-pane active">
+        <div class="card">
+          <h3>Welcome to the Dashboard</h3>
+          <p>Your current active workspace overview will appear here.</p>
+        </div>
+        <div id="dashboard-records" class="card">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <div id="tab-leads" class="tab-pane">
+        <div class="card">
+          <h3>Leads</h3>
+          <p>Manage your prospective clients.</p>
+        </div>
+      </div>
+
+      <div id="tab-pipeline" class="tab-pane">
+        <div class="card">
+          <h3>Pipeline</h3>
+          <p>Track ongoing sales processes.</p>
+        </div>
+      </div>
+
+      <div id="tab-sourcing" class="tab-pane">
+        <div class="card">
+          <h3>Requirements & Sourcing</h3>
+          <p>Fulfill client needs.</p>
+        </div>
+      </div>
+
+      <div id="tab-deals" class="tab-pane">
+        <div class="card">
+          <h3>Deals</h3>
+          <p>Closed and closing deals.</p>
+        </div>
+      </div>
+
+      <div id="tab-database" class="tab-pane">
+        <div class="card">
+          <h3>Database</h3>
+          <p>Full CRM registry.</p>
+        </div>
+      </div>
+
+      <div id="tab-reports" class="tab-pane">
+        <div class="card">
+          <h3>Reports / MIS</h3>
+          <p>Analytics based on your role access.</p>
+        </div>
+      </div>
+
+      <div id="tab-settings" class="tab-pane">
+        <div class="card">
+          <h3>Settings</h3>
+          <p>Application settings (restricted access).</p>
+        </div>
+      </div>
+
+      <!-- Audit Logs (Admin only visible usually, but let's put it on Dashboard or Database) -->
+      <div id="audit-logs-section" class="card hidden">
+        <h3>Recent Audit Logs</h3>
+        <div id="audit-logs-container"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
