@@ -8,7 +8,7 @@ window.crmSchema = {
     duplicateKeys: ['name']
   },
   serviceLines: {
-    fields: ['name', 'description', 'status'],
+    fields: ['name', 'category', 'service_type', 'technology_topic', 'description', 'status', 'remarks'],
     duplicateKeys: ['name']
   },
   leads: {
@@ -23,11 +23,11 @@ window.crmSchema = {
     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
   },
   contacts: {
-    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'client_id', 'job_title', 'department', 'primary_contact'],
+    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'client_id', 'job_title', 'department', 'primary_contact', 'designation', 'company_name', 'relationship_type', 'contact_type', 'vendor_id', 'trainer_id', 'lead_id', 'owner_id', 'remarks'],
     duplicateKeys: ['email', 'phone', 'linkedin']
   },
   clients: {
-    fields: ['company_name', 'industry', 'website', 'gst', 'billing_address', 'shipping_address', 'account_tier', 'annual_revenue'],
+    fields: ['company_name', 'industry', 'company_size', 'website', 'city', 'country', 'gst', 'billing_address', 'shipping_address', 'primary_contact', 'relationship_status', 'remarks', 'account_tier', 'annual_revenue'],
     duplicateKeys: ['company_name', 'gst']
   },
   requirements: {
@@ -56,11 +56,11 @@ window.crmSchema = {
     duplicateKeys: []
   },
   trainers: {
-    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'expertise', 'daily_rate', 'availability', 'certifications'],
+    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'expertise', 'daily_rate', 'availability', 'certifications', 'city', 'skills', 'experience', 'past_clients', 'commercial_rate', 'mode_preference', 'travel_flexibility', 'recording_capability', 'feedback_rating', 'vendor_status', 'vendor_id', 'documents', 'remarks'],
     duplicateKeys: ['email', 'phone', 'linkedin']
   },
   vendors: {
-    fields: ['company_name', 'services_provided', 'email', 'phone', 'gst', 'website', 'point_of_contact', 'payment_terms'],
+    fields: ['company_name', 'services_provided', 'email', 'phone', 'gst', 'website', 'point_of_contact', 'payment_terms', 'vendor_contact', 'city', 'service_area', 'trainer_pool_strength', 'commercial_model', 'past_work', 'reliability_rating', 'remarks'],
     duplicateKeys: ['company_name', 'email', 'gst']
   },
   deals: {

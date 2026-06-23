@@ -1,240 +1,153 @@
 ﻿# AI Change Audit Report
 
 ## Generated On
-2026-06-23_17-03-00
+2026-06-23_17-37-29
 
 ## Branch
 main
 
 ## Baseline Commit
-6e940fa
+bfb8545
 
 ## Task Summary
-Deals SOP upgrade: restored deal modal, convert from requirement, safe table rendering, quick actions, and requirement conversion tracing
+Database SOP upgrade: master lists, leads and normal contacts, import data, archive workflow, duplicate checks, and SOP schema fields
 
 ## Git Status
 ```text
  M index.html
- M js/deals.js
+ M js/database.js
+ M js/db.js
+ M js/schema.js
 ```
 
 ## Files Changed
 ```text
 M	index.html
-M	js/deals.js
+M	js/database.js
+M	js/db.js
+M	js/schema.js
 ```
 
 ## Change Summary
 ```text
- index.html  | 169 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- js/deals.js | 152 ++++++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 311 insertions(+), 10 deletions(-)
+ index.html     |  50 +++++-----
+ js/database.js | 300 +++++++++++++++++++++++++++++++++++++++------------------
+ js/db.js       |   2 +-
+ js/schema.js   |  10 +-
+ 4 files changed, 241 insertions(+), 121 deletions(-)
 ```
 
 ## Full Diff
 ```diff
 diff --git a/index.html b/index.html
-index 229dc9f..1384eda 100644
+index 1384eda..ca8cecd 100644
 --- a/index.html
 +++ b/index.html
-@@ -294,7 +294,10 @@
-             <h3>Deals</h3>
-             <p>Delivery, finance, and post-sales tracking.</p>
-           </div>
--          <button class="btn btn-primary" onclick="window.dealsManager.openDealModal()">+ Create Deal Manually</button>
-+          <div style="display: flex; gap: 8px;">
-+            <button class="btn btn-secondary" id="btn-deals-convert-req" onclick="window.dealsManager.convertFromRequirement()">Convert from Requirement</button>
-+            <button class="btn btn-primary" onclick="window.dealsManager.openDealModal()">+ Add Deal</button>
+@@ -360,8 +360,13 @@
+ 
+       <div id="tab-database" class="tab-pane">
+         <div class="card">
+-          <h3>Database Master Lists</h3>
+-          <p>Central repository for master data. Search and manage existing records across the system.</p>
++          <div style="display: flex; justify-content: space-between; align-items: center;">
++            <div>
++              <h3>Database Master Lists</h3>
++              <p>Central repository for master data. Search and manage existing records across the system.</p>
++            </div>
++            <button class="btn btn-secondary btn-db-add" onclick="window.databaseManager.goToImport()">Import Data</button>
 +          </div>
          </div>
  
          <div class="card">
-@@ -339,6 +342,7 @@
-                 <tr>
-                   <th>Deal ID / Project</th>
-                   <th>Client</th>
-+                  <th>Service</th>
-                   <th>Value</th>
-                   <th>Status</th>
-                   <th>Payment</th>
-@@ -897,6 +901,169 @@
-     </div>
-   </div>
+@@ -375,7 +380,25 @@
  
-+  <!-- Deal Modal -->
-+  <div id="modal-deal" class="modal-overlay hidden">
-+    <div class="modal" style="width: 1000px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
-+      <div class="modal-header">
-+        <h3 id="modal-deal-title">Deal Details</h3>
-+        <button type="button" class="btn btn-secondary" id="btn-close-deal-modal">Close</button>
-+      </div>
-+      <form id="form-deal">
-+        <input type="hidden" id="deal-id">
-+        <input type="hidden" id="deal-req-id">
-+        <input type="hidden" id="deal-lead-id">
-+        <input type="hidden" id="deal-trainer-id">
-+        <input type="hidden" id="deal-vendor-id">
-+
-+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
-+          <!-- Column 1: Setup & Finance -->
-+          <div class="card" style="padding: 12px;">
-+            <h4>1. Setup & Finance</h4>
-+            <div class="form-group"><label>Project Name</label><input type="text" id="deal-project" class="form-control" required></div>
-+            <div class="form-group"><label>Client ID</label><input type="text" id="deal-client" class="form-control"></div>
-+            <div class="form-group"><label>Contact ID</label><input type="text" id="deal-contact" class="form-control"></div>
-+            <div class="form-group"><label>Service Type</label><input type="text" id="deal-service" class="form-control"></div>
-+            <div class="form-group"><label>Deal Amount</label><input type="number" id="deal-amount" class="form-control"></div>
-+            <div class="form-group"><label>Owner ID</label><input type="text" id="deal-owner" class="form-control"></div>
-+            <div class="form-group"><label>Start Date</label><input type="date" id="deal-start" class="form-control"></div>
-+            <div class="form-group"><label>End Date</label><input type="date" id="deal-end" class="form-control"></div>
-+            <div class="form-group"><label>Mode</label><input type="text" id="deal-mode" class="form-control"></div>
-+            <div class="form-group"><label>Location</label><input type="text" id="deal-loc" class="form-control"></div>
-+            <div class="form-group"><label>Deal Status</label>
-+              <select id="deal-status" class="form-control">
-+                <option value="Planning">Planning</option>
-+                <option value="Confirmed">Confirmed</option>
-+                <option value="Live">Live</option>
-+                <option value="Completed">Completed</option>
-+                <option value="Closed">Closed</option>
-+                <option value="Cancelled">Cancelled</option>
-+              </select>
-+            </div>
-+            <hr style="margin: 10px 0;">
-+            <h4>Invoicing & Payment</h4>
-+            <div class="form-group"><label>Client Invoice No</label><input type="text" id="deal-inv-no" class="form-control"></div>
-+            <div class="form-group"><label>Invoice Date</label><input type="date" id="deal-inv-date" class="form-control"></div>
-+            <div class="form-group"><label>Invoice Amount</label><input type="number" id="deal-inv-amt" class="form-control"></div>
-+            <div class="form-group"><label>Payment Status</label>
-+              <select id="deal-pay-status" class="form-control">
-+                <option value="Pending">Pending</option>
-+                <option value="Partial">Partial</option>
-+                <option value="Received">Received</option>
-+                <option value="Overdue">Overdue</option>
-+              </select>
-+            </div>
-+            <div class="form-group"><label>Payment Follow-up</label><input type="date" id="deal-pay-follow" class="form-control"></div>
+         <div class="card">
+           <div style="display: flex; justify-content: space-between; align-items: center;">
+-            <h3>Contacts</h3>
++            <h3>Leads Master</h3>
++            <!-- No add button here, leads added via Leads Tab -->
 +          </div>
-+
-+          <!-- Column 2: Trainer & Delivery -->
-+          <div class="card" style="padding: 12px;">
-+            <h4>2. Resources & Logistics</h4>
-+            <div class="form-group"><label>Trainer Name</label>
-+              <div style="display: flex; gap: 4px;">
-+                <input type="text" id="deal-trainer-name" class="form-control" readonly>
-+                <button type="button" class="btn btn-secondary" onclick="window.dealsManager.assignTrainer()" style="padding: 0 8px;">Assign</button>
-+              </div>
-+            </div>
-+            <div class="form-group"><label>Vendor Name</label>
-+              <div style="display: flex; gap: 4px;">
-+                <input type="text" id="deal-vendor-name" class="form-control" readonly>
-+                <button type="button" class="btn btn-secondary" onclick="window.dealsManager.assignVendor()" style="padding: 0 8px;">Assign</button>
-+              </div>
-+            </div>
-+            <div class="form-group"><label>Trainer Rate</label><input type="text" id="deal-trainer-rate" class="form-control"></div>
-+            <div class="form-group"><label>Trainer Confirmation</label>
-+              <select id="deal-trainer-conf" class="form-control">
-+                <option value="Pending">Pending</option>
-+                <option value="Confirmed">Confirmed</option>
-+              </select>
-+            </div>
-+            <div class="form-group"><label>Trainer Documents</label><input type="text" id="deal-trainer-docs" class="form-control"></div>
-+            <div class="form-group"><label>Travel Details</label><input type="text" id="deal-travel" class="form-control"></div>
-+            <div class="form-group"><label>Hotel Booking</label><input type="text" id="deal-hotel" class="form-control"></div>
-+            <div class="form-group"><label>Trainer Reminder</label>
-+              <select id="deal-reminder" class="form-control">
-+                <option value="Not Sent">Not Sent</option>
-+                <option value="Sent">Sent</option>
-+              </select>
-+            </div>
-+            <hr style="margin: 10px 0;">
-+            <h4>Delivery Tracking</h4>
-+            <div class="form-group"><label>Delivery Status</label>
-+              <select id="deal-delivery-status" class="form-control">
-+                <option value="Not Started">Not Started</option>
-+                <option value="In Progress">In Progress</option>
-+                <option value="Partially Completed">Partially Completed</option>
-+                <option value="Completed">Completed</option>
-+                <option value="Cancelled">Cancelled</option>
-+              </select>
-+            </div>
-+            <div class="form-group"><label>Session Plan</label><input type="text" id="deal-session" class="form-control"></div>
-+            <div class="form-group"><label>Attendance List</label><input type="text" id="deal-attendance" class="form-control"></div>
-+            <div class="form-group"><label>Day 1 Check-in</label>
-+              <select id="deal-day1" class="form-control">
-+                <option value="Pending">Pending</option>
-+                <option value="Done">Done</option>
-+                <option value="Issues Reported">Issues Reported</option>
-+              </select>
-+            </div>
-+            <div class="form-group"><label>Training Notes</label><textarea id="deal-notes" class="form-control" rows="2"></textarea></div>
-+            <div class="form-group"><label>Booking Details</label><input type="text" id="deal-booking" class="form-control"></div>
-+            <div class="form-group"><label>Resource Links</label><input type="text" id="deal-res-links" class="form-control"></div>
-+            <div class="form-group"><label>Recording Link</label><input type="text" id="deal-rec-link" class="form-control"></div>
-+            <div class="form-group"><label>Batch Report Status</label><input type="text" id="deal-batch-status" class="form-control"></div>
-+          </div>
-+
-+          <!-- Column 3: Post-Sales & Feedback -->
-+          <div class="card" style="padding: 12px;">
-+            <h4>3. Post-Sales & Closure</h4>
-+            <div class="form-group"><label>Trainer Invoice Ref</label><input type="text" id="deal-tr-inv" class="form-control"></div>
-+            <div class="form-group"><label>Trainer Payout Date</label><input type="date" id="deal-tr-pay-date" class="form-control"></div>
-+            <div class="form-group"><label>Trainer Payment Status</label>
-+              <select id="deal-tr-pay-status" class="form-control">
-+                <option value="Pending">Pending</option>
-+                <option value="Paid">Paid</option>
-+                <option value="Hold">Hold</option>
-+              </select>
-+            </div>
-+            <div class="form-group"><label>Reimbursements</label><input type="text" id="deal-reimb" class="form-control"></div>
-+            <hr style="margin: 10px 0;">
-+            <div class="form-group"><label>Client Feedback</label><input type="text" id="deal-fb-client" class="form-control"></div>
-+            <div class="form-group"><label>Learner Feedback</label><input type="text" id="deal-fb-learner" class="form-control"></div>
-+            <div class="form-group"><label>Trainer Feedback</label><input type="text" id="deal-fb-trainer" class="form-control"></div>
-+            <div class="form-group"><label>Post Test Status</label><input type="text" id="deal-post-test" class="form-control"></div>
-+            <div class="form-group"><label>Completion Report</label><input type="text" id="deal-comp-report" class="form-control"></div>
-+            <div class="form-group"><label>Final Closure</label>
-+              <select id="deal-closure" class="form-control">
-+                <option value="Pending">Pending</option>
-+                <option value="Closed">Closed</option>
-+              </select>
-+            </div>
-+            <hr style="margin: 10px 0;">
-+            <div class="form-group"><label>Upsell Opportunity</label><textarea id="deal-upsell" class="form-control" rows="2"></textarea></div>
-+            <div class="form-group"><label>Cross-Sell</label><input type="text" id="deal-cross" class="form-control"></div>
-+            <div class="form-group"><label>Reference Request</label><input type="text" id="deal-ref" class="form-control"></div>
-+            <div class="form-group"><label>Weekly Touchpoint</label><input type="text" id="deal-touch" class="form-control"></div>
-+            <div class="form-group"><label>Repeat Business</label><input type="text" id="deal-repeat" class="form-control"></div>
-+          </div>
++          <input type="text" id="db-search-leads" class="form-control" placeholder="Search Leads..." style="margin: 10px 0; max-width: 300px;">
++          <div id="db-leads-list" class="table-container"></div>
 +        </div>
 +
-+        <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
-+          <button type="submit" class="btn btn-primary">Save Deal</button>
-+          <!-- SOP Quick Actions -->
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-session')">Add Delivery Schedule</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-booking')">Add Booking</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-inv-no')">Upload Invoice</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-tr-inv')">Upload Trainer Invoice</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-pay-follow')">Add Payment Follow-up</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-fb-client')">Add Feedback</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.markCompleted()">Mark Completed</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.closeDeal()">Close Deal</button>
-+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-upsell')">Add Upsell Follow-up</button>
++        <div class="card">
++          <div style="display: flex; justify-content: space-between; align-items: center;">
++            <h3>Normal Contacts</h3>
++            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('contacts', null, { contact_type: 'Normal' })">+ Add Normal Contact</button>
++          </div>
++          <input type="text" id="db-search-normal-contacts" class="form-control" placeholder="Search Normal Contacts..." style="margin: 10px 0; max-width: 300px;">
++          <div id="db-normal-contacts-list" class="table-container"></div>
 +        </div>
-+      </form>
-+    </div>
-+  </div>
 +
-   <script src="js/schema.js"></script>
-   <script src="js/db.js"></script>
-   <script src="js/import.js"></script>
-diff --git a/js/deals.js b/js/deals.js
-index 82b7028..82dcec4 100644
---- a/js/deals.js
-+++ b/js/deals.js
-@@ -13,6 +13,17 @@ class DealsManager {
-     this.render();
-   }
++        <div class="card">
++          <div style="display: flex; justify-content: space-between; align-items: center;">
++            <h3>Contacts (Linked)</h3>
+             <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('contacts')">+ Add Contact</button>
+           </div>
+           <input type="text" id="db-search-contacts" class="form-control" placeholder="Search Contacts..." style="margin: 10px 0; max-width: 300px;">
+@@ -402,30 +425,12 @@
  
+         <div class="card">
+           <div style="display: flex; justify-content: space-between; align-items: center;">
+-            <h3>Service Lines / Training Categories</h3>
++            <h3>Service Database</h3>
+             <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('serviceLines')">+ Add Service Line</button>
+           </div>
+           <input type="text" id="db-search-serviceLines" class="form-control" placeholder="Search Service Lines..." style="margin: 10px 0; max-width: 300px;">
+           <div id="db-serviceLines-list" class="table-container"></div>
+         </div>
+-
+-        <div class="card db-admin-only" id="db-admin-users" style="display: none;">
+-          <div style="display: flex; justify-content: space-between; align-items: center;">
+-            <h3>Users</h3>
+-            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('users')">+ Add User</button>
+-          </div>
+-          <input type="text" id="db-search-users" class="form-control" placeholder="Search Users..." style="margin: 10px 0; max-width: 300px;">
+-          <div id="db-users-list" class="table-container"></div>
+-        </div>
+-
+-        <div class="card db-admin-only" id="db-admin-teams" style="display: none;">
+-          <div style="display: flex; justify-content: space-between; align-items: center;">
+-            <h3>Teams</h3>
+-            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('teams')">+ Add Team</button>
+-          </div>
+-          <input type="text" id="db-search-teams" class="form-control" placeholder="Search Teams..." style="margin: 10px 0; max-width: 300px;">
+-          <div id="db-teams-list" class="table-container"></div>
+-        </div>
+       </div>
+ 
+       <div id="tab-reports" class="tab-pane">
+@@ -479,6 +484,7 @@
+               <option value="requirements">Requirements</option>
+               <option value="trainers">Trainers</option>
+               <option value="vendors">Vendors</option>
++              <option value="serviceLines">Service Lines</option>
+             </select>
+           </div>
+           <div class="form-group">
+diff --git a/js/database.js b/js/database.js
+index 4663220..7099ddd 100644
+--- a/js/database.js
++++ b/js/database.js
+@@ -2,16 +2,30 @@ class DatabaseManager {
+   constructor() {
+     this.searchFilters = {
+       clients: '',
++      leads: '',
++      'normal-contacts': '',
+       contacts: '',
+       vendors: '',
+       trainers: '',
+-      users: '',
+-      teams: '',
+       serviceLines: ''
+     };
+ 
+     this.bindEvents();
+-    // Do not call this.render() here, it will be called by app.js when the tab is clicked.
++  }
++
 +  escapeHTML(str) {
 +    if (str === null || str === undefined || str === '') return '-';
 +    if (typeof str === 'number') return String(str);
@@ -246,219 +159,510 @@ index 82b7028..82dcec4 100644
 +      .replace(/'/g, "&#039;");
 +  }
 +
++  formatFieldName(field) {
++    return field.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+   }
+ 
    bindEvents() {
-     const el = (id) => document.getElementById(id);
-     if (!el('deal-filter-owner')) return;
-@@ -34,6 +45,19 @@ class DealsManager {
-       e.preventDefault();
-       this.saveDeal();
-     });
+@@ -27,7 +41,7 @@ class DatabaseManager {
+       }
+     };
+ 
+-    ['clients', 'contacts', 'vendors', 'trainers', 'users', 'teams', 'serviceLines'].forEach(bindSearch);
++    ['clients', 'leads', 'normal-contacts', 'contacts', 'vendors', 'trainers', 'serviceLines'].forEach(bindSearch);
+ 
+     const closeModalBtn = el('btn-close-database-modal');
+     if (closeModalBtn) {
+@@ -43,43 +57,49 @@ class DatabaseManager {
+         this.saveRecord();
+       });
+     }
 +
-+    const tbody = el('deals-table-body');
-+    if (tbody) {
-+      tbody.addEventListener('click', (e) => {
-+        const btn = e.target.closest('.deal-action');
-+        if (!btn) return;
-+        const action = btn.getAttribute('data-action');
-+        const dealId = btn.getAttribute('data-id');
-+        if (action === 'view') {
-+          this.openDealModal(dealId);
-+        }
-+      });
-+    }
++    // Event delegation for table lists
++    ['clients', 'leads', 'normal-contacts', 'contacts', 'vendors', 'trainers', 'serviceLines'].forEach(coll => {
++      const listEl = el(`db-${coll}-list`);
++      if (listEl) {
++        listEl.addEventListener('click', (e) => {
++          const btn = e.target.closest('.btn-db-action');
++          if (!btn) return;
++          const action = btn.getAttribute('data-action');
++          const id = btn.getAttribute('data-id');
++          const targetColl = btn.getAttribute('data-coll');
++
++          if (action === 'edit') this.openModal(targetColl, id);
++          if (action === 'archive') this.archiveRecord(targetColl, id);
++          if (action === 'check-dup') this.checkDuplicateModal(targetColl, id);
++        });
++      }
++    });
    }
  
    render() {
-@@ -42,13 +66,16 @@ class DealsManager {
- 
      const user = auth.getCurrentUser();
-     let deals = db.getRecords('deals', user);
-+    let clients = db.getRecords('clients', user);
  
-     tbody.innerHTML = '';
- 
-     deals.forEach(deal => {
-       // Filters
-       if (this.filterOwner && deal.owner_id && !deal.owner_id.toLowerCase().includes(this.filterOwner)) return;
--      if (this.filterClient && deal.client_id && !deal.client_id.toLowerCase().includes(this.filterClient)) return;
-+
-+      const clientName = this.getClientName(deal.client_id, clients);
-+      if (this.filterClient && clientName.toLowerCase().indexOf(this.filterClient) === -1 && (!deal.client_id || !deal.client_id.toLowerCase().includes(this.filterClient))) return;
- 
-       const srv = deal.service_type || deal.service_interest || '';
-       if (this.filterService && srv !== this.filterService) return;
-@@ -66,22 +93,32 @@ class DealsManager {
-       if (this.filterPayment && deal.payment_status !== this.filterPayment) return;
-       if (this.filterDelivery && deal.completion_status !== this.filterDelivery) return;
- 
-+      const eid = this.escapeHTML(deal.id);
-+      const reqRef = deal.requirement_id || deal.req_id || '';
-       const tr = document.createElement('tr');
-       tr.innerHTML = `
--        <td><strong>${deal.project_name || deal.title || 'Untitled'}</strong><br><small>${deal.id}</small></td>
--        <td>${deal.client_id || '-'}</td>
--        <td>${deal.amount || '-'}</td>
--        <td>${deal.status || 'Planning'}</td>
--        <td>${deal.payment_status || 'Pending'}</td>
--        <td>${deal.completion_status || 'Not Started'}</td>
-+        <td><strong>${this.escapeHTML(deal.project_name || deal.title || 'Untitled')}</strong><br><small>${eid}</small>${reqRef ? `<br><small class="text-muted">Req: ${this.escapeHTML(reqRef)}</small>` : ''}</td>
-+        <td>${this.escapeHTML(clientName)}</td>
-+        <td>${this.escapeHTML(srv)}</td>
-+        <td>${this.escapeHTML(deal.amount)}</td>
-+        <td>${this.escapeHTML(deal.status || 'Planning')}</td>
-+        <td>${this.escapeHTML(deal.payment_status || 'Pending')}</td>
-+        <td>${this.escapeHTML(deal.completion_status || 'Not Started')}</td>
-         <td>
--          <button class="btn btn-secondary" onclick="window.dealsManager.openDealModal('${deal.id}')">View</button>
-+          <button class="btn btn-secondary deal-action" data-action="view" data-id="${eid}">View</button>
-         </td>
-       `;
-       tbody.appendChild(tr);
+-    // Hide/Show Admin sections based on role
+-    const el = (id) => document.getElementById(id);
+-    if (user.role === 'manager') {
+-      if (el('db-admin-users')) el('db-admin-users').style.display = 'block';
+-      if (el('db-admin-teams')) el('db-admin-teams').style.display = 'block';
+-    } else {
+-      if (el('db-admin-users')) el('db-admin-users').style.display = 'none';
+-      if (el('db-admin-teams')) el('db-admin-teams').style.display = 'none';
+-    }
+-
+     // Hide Add buttons for employees
+     const addBtns = document.querySelectorAll('.btn-db-add');
+     addBtns.forEach(btn => {
+       btn.style.display = user.role === 'employee' ? 'none' : 'block';
      });
+ 
+-    ['clients', 'contacts', 'vendors', 'trainers', 'serviceLines'].forEach(coll => this.renderCollection(coll));
+-    if (user.role === 'manager') {
+-      ['users', 'teams'].forEach(coll => this.renderCollection(coll));
+-    }
++    ['clients', 'leads', 'normal-contacts', 'contacts', 'vendors', 'trainers', 'serviceLines'].forEach(coll => this.renderCollection(coll));
    }
  
-+  getClientName(clientId, clients) {
-+    if (!clientId) return '-';
-+    const client = clients.find(c => c.id === clientId);
-+    if (client) return client.company_name;
-+    return clientId;
-+  }
+   getLinkedCounts(collection, id, allRecords) {
+     let counts = [];
+     if (collection === 'clients') {
+-      const contacts = allRecords.contacts.filter(r => r.client_id === id).length;
+-      const reqs = allRecords.requirements.filter(r => r.client_id === id).length;
+-      const deals = allRecords.deals.filter(r => r.client_id === id).length;
+-      if (contacts) counts.push(`${contacts} Contacts`);
+-      if (reqs) counts.push(`${reqs} Reqs`);
+-      if (deals) counts.push(`${deals} Deals`);
+-    } else if (collection === 'contacts') {
++      const deals = allRecords.deals.filter(r => r.client_id === id);
++      const totalDeals = deals.length;
++      const totalRev = deals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
++      const acts = allRecords.activities.filter(a => a.related_id === id);
++      const lastAct = acts.length > 0 ? new Date(Math.max(...acts.map(a => new Date(a.created_at)))).toISOString().split('T')[0] : 'None';
 +
-   openDealModal(dealId = null) {
++      return `Deals: ${totalDeals} | Rev: ${totalRev} | Last Act: ${lastAct}`;
++    } else if (collection === 'contacts' || collection === 'normal-contacts') {
+       const reqs = allRecords.requirements.filter(r => r.contact_id === id).length;
+       const deals = allRecords.deals.filter(r => r.contact_id === id).length;
+       if (reqs) counts.push(`${reqs} Reqs`);
+@@ -96,7 +116,18 @@ class DatabaseManager {
+ 
+   renderCollection(collection) {
      const user = auth.getCurrentUser();
-     const modalTitle = document.getElementById('modal-deal-title');
-@@ -168,7 +205,7 @@ class DealsManager {
-         el('deal-repeat').value = deal.repeat_business_status || '';
-       }
+-    const records = db.getRecords(collection, user);
++    const isEmp = user.role === 'employee';
++    let baseColl = collection;
++    if (collection === 'normal-contacts') baseColl = 'contacts';
++
++    let records = db.getRecords(baseColl, user);
++
++    if (collection === 'normal-contacts') {
++      records = records.filter(r => r.contact_type === 'Normal' || (!r.client_id && !r.vendor_id && !r.trainer_id && !r.lead_id));
++    } else if (collection === 'contacts') {
++      records = records.filter(r => r.client_id || r.vendor_id || r.trainer_id || r.lead_id || (r.contact_type && r.contact_type !== 'Normal'));
++    }
++
+     const container = document.getElementById(`db-${collection}-list`);
+     if (!container) return;
+ 
+@@ -106,44 +137,60 @@ class DatabaseManager {
+       return Object.values(r).some(v => String(v).toLowerCase().includes(searchTerm));
+     });
+ 
+-    // Load all records once for link counting
+     const allRecords = {
+-      contacts: db.getRecords('contacts', user),
++      deals: db.getRecords('deals', user),
+       requirements: db.getRecords('requirements', user),
+-      deals: db.getRecords('deals', user)
++      activities: JSON.parse(localStorage.getItem('crm_activities') || '[]')
+     };
+ 
+-    const schema = window.crmSchema[collection];
+-    if (!schema) return;
+-
+-    // Display first 4 fields
+-    const displayFields = schema.fields.slice(0, 4);
++    let columns = [];
++    if (collection === 'clients') {
++      columns = ['company_name', 'industry', 'city', 'country'];
++    } else if (collection === 'leads') {
++      columns = ['company_name', 'service_interest', 'pipeline_stage', 'owner_id', 'converted_requirement_id', 'status'];
++    } else if (collection === 'normal-contacts' || collection === 'contacts') {
++      columns = ['first_name', 'last_name', 'company_name', 'designation', 'phone', 'email', 'contact_type'];
++    } else if (collection === 'trainers') {
++      columns = ['first_name', 'last_name', 'skills', 'commercial_rate', 'phone', 'email', 'vendor_status'];
++    } else if (collection === 'vendors') {
++      columns = ['company_name', 'vendor_contact', 'service_area', 'phone', 'email'];
++    } else if (collection === 'serviceLines') {
++      columns = ['name', 'category', 'service_type', 'status'];
++    } else {
++      columns = window.crmSchema[baseColl]?.fields.slice(0, 4) || [];
++    }
+ 
+     let html = `<table class="data-table"><thead><tr>`;
+-    displayFields.forEach(f => {
+-      html += `<th>${this.formatFieldName(f)}</th>`;
+-    });
+-    html += `<th>Linked Data</th>`;
+-    if (user.role !== 'employee') {
+-      html += `<th>Actions</th>`;
++    columns.forEach(c => html += `<th>${this.formatFieldName(c)}</th>`);
++
++    if (['clients', 'contacts', 'normal-contacts', 'trainers', 'vendors'].includes(collection)) {
++      html += `<th>Linked Data</th>`;
+     }
++
++    if (!isEmp) html += `<th>Actions</th>`;
+     html += `</tr></thead><tbody>`;
+ 
+     if (filtered.length === 0) {
+-      html += `<tr><td colspan="${displayFields.length + 2}">No records found.</td></tr>`;
++      html += `<tr><td colspan="${columns.length + 2}">No records found.</td></tr>`;
      } else {
--      modalTitle.textContent = 'Create Deal';
-+      modalTitle.textContent = 'Add Deal';
-       el('deal-owner').value = user.id;
+       filtered.forEach(record => {
+         html += `<tr>`;
+-        displayFields.forEach(f => {
+-          html += `<td>${this.escapeHTML(record[f])}</td>`;
++        columns.forEach(c => {
++          html += `<td>${this.escapeHTML(record[c])}</td>`;
+         });
+-        html += `<td><span style="font-size: 0.85em; color: #666;">${this.escapeHTML(this.getLinkedCounts(collection, record.id, allRecords))}</span></td>`;
+ 
+-        if (user.role !== 'employee') {
++        if (['clients', 'contacts', 'normal-contacts', 'trainers', 'vendors'].includes(collection)) {
++          html += `<td><span style="font-size: 0.85em; color: #666;">${this.escapeHTML(this.getLinkedCounts(collection, record.id, allRecords))}</span></td>`;
++        }
++
++        if (!isEmp) {
++          const eId = this.escapeHTML(record.id);
++          const eColl = this.escapeHTML(baseColl);
+           html += `
+             <td>
+-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="window.databaseManager.openModal('${collection}', '${record.id}')">Edit</button>
+-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background-color: #fee;" onclick="window.databaseManager.deleteRecord('${collection}', '${record.id}')">Del</button>
++              <button class="btn btn-secondary btn-db-action" data-action="edit" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px;">Update Profile</button>
++              <button class="btn btn-secondary btn-db-action" data-action="archive" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px; background-color: #fee;">Archive</button>
++              <button class="btn btn-secondary btn-db-action" data-action="check-dup" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px;">Check Dup</button>
+             </td>
+           `;
+         }
+@@ -154,62 +201,48 @@ class DatabaseManager {
+     container.innerHTML = html;
+   }
+ 
+-  escapeHTML(str) {
+-    if (!str) return '-';
+-    return String(str)
+-      .replace(/&/g, "&amp;")
+-      .replace(/</g, "&lt;")
+-      .replace(/>/g, "&gt;")
+-      .replace(/"/g, "&quot;")
+-      .replace(/'/g, "&#039;");
+-  }
+-
+-  formatFieldName(field) {
+-    return field.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+-  }
+-
+-  openModal(collection, recordId = null) {
++  openModal(collection, recordId = null, defaults = {}) {
+     const user = auth.getCurrentUser();
+     if (user.role === 'employee') return;
+     const schema = window.crmSchema[collection];
+     if (!schema) return;
+ 
+-    document.getElementById('db-collection').value = collection;
+-    document.getElementById('db-record-id').value = recordId || '';
++    const el = (id) => document.getElementById(id);
++    el('db-collection').value = collection;
++    el('db-record-id').value = recordId || '';
+ 
+     const titleObj = collection.charAt(0).toUpperCase() + collection.slice(1);
+-    document.getElementById('modal-database-title').textContent = recordId ? `Edit ${titleObj}` : `Add ${titleObj}`;
++    el('modal-database-title').textContent = recordId ? `Update ${titleObj} Profile` : `Add ${titleObj}`;
+ 
+-    const fieldsContainer = document.getElementById('db-dynamic-fields');
++    const fieldsContainer = el('db-dynamic-fields');
+     fieldsContainer.innerHTML = '';
+ 
+     let record = null;
+     if (recordId) {
+-      const records = db.getRecords(collection, user);
+-      record = records.find(r => r.id === recordId);
++      record = db.getRecords(collection, user).find(r => r.id === recordId);
      }
  
-@@ -247,6 +284,10 @@ class DealsManager {
-     let savedDealId = dealId;
-     if (dealId) {
-       oldDeal = db.getRecords('deals', user).find(d => d.id === dealId);
-+      if (oldDeal && user.role === 'employee' && oldDeal.owner_id !== dealData.owner_id) {
-+        dealData.owner_id = oldDeal.owner_id; // Preserve old owner
-+      }
+     schema.fields.forEach(field => {
+       const wrapper = document.createElement('div');
+       wrapper.className = 'form-group';
+-
+-      const label = document.createElement('label');
+-      label.textContent = this.formatFieldName(field);
++      wrapper.innerHTML = `<label>${this.escapeHTML(this.formatFieldName(field))}</label>`;
+ 
+       const input = document.createElement('input');
+       input.type = 'text';
+       input.id = `db-f-${field}`;
+       input.className = 'form-control';
 +
-       // Pipeline synchronization
-       if (dealData.status === 'Cancelled') {
-         dealData.pipeline_stage = 'Lost';
-@@ -314,6 +355,16 @@ class DealsManager {
-         db.logAudit('vendor_assigned', `Vendor ${dealData.selected_vendor_id} assigned to deal ${savedDealId}`, user);
-         db.logActivity('trainer coordination', `Vendor assignment set`, 'deals', savedDealId, user);
+       if (record && record[field]) {
+         input.value = record[field];
++      } else if (!record && defaults[field]) {
++        input.value = defaults[field];
        }
+ 
+-      wrapper.appendChild(label);
+       wrapper.appendChild(input);
+       fieldsContainer.appendChild(wrapper);
+     });
+ 
+-    document.getElementById('modal-database').classList.remove('hidden');
++    el('modal-database').classList.remove('hidden');
+   }
+ 
+   normalizeValue(value) {
+@@ -217,6 +250,73 @@ class DatabaseManager {
+     return String(value).trim().toLowerCase().replace(/[\s\+\-\(\)\[\]]/g, '');
+   }
+ 
++  checkDuplicateModal(collection, recordId) {
++    const user = auth.getCurrentUser();
++    if (user.role === 'employee') return;
++    const schema = window.crmSchema[collection];
++    if (!schema || !schema.duplicateKeys || schema.duplicateKeys.length === 0) {
++      return alert('No duplicate keys defined for this collection.');
++    }
 +
-+      if (dealData.requirement_id) {
-+        db.updateRecord('requirements', dealData.requirement_id, {
-+          status: 'Converted',
-+          pipeline_stage: 'Converted',
-+          converted_deal_id: savedDealId
-+        }, user);
-+        db.logAudit('convert_to_deal', `Requirement ${dealData.requirement_id} converted to deal ${savedDealId}`, user);
-+        db.logActivity('convert_to_deal', `Requirement converted to deal`, 'requirements', dealData.requirement_id, user);
++    const record = db.getRecords(collection, user).find(r => r.id === recordId);
++    if (!record) return;
++
++    const globalRecords = db.getRecords(collection, {role: 'manager'});
++    let duplicateRecord = null;
++
++    for (let r of globalRecords) {
++      if (r.id === recordId) continue;
++      let isDup = false;
++      for (let key of schema.duplicateKeys) {
++        if (record[key] && r[key]) {
++          if (this.normalizeValue(record[key]) === this.normalizeValue(r[key])) {
++            isDup = true;
++            break;
++          }
++        }
 +      }
++      if (isDup) {
++        duplicateRecord = r;
++        break;
++      }
++    }
++
++    if (!duplicateRecord) {
++      return alert('No duplicates found.');
++    }
++
++    const accessibleRecords = db.getRecords(collection, user);
++    const isAccessible = accessibleRecords.some(r => r.id === duplicateRecord.id);
++
++    if (!isAccessible) {
++      return alert(`Duplicate found outside scope (ID: ${duplicateRecord.id}). Ask manager.`);
++    }
++
++    const confirmMerge = confirm(`Duplicate detected: ${duplicateRecord.id}. Merge missing fields from this record into the older duplicate and archive this one?`);
++    if (confirmMerge) {
++      let mergedData = { ...duplicateRecord };
++      let changes = false;
++      schema.fields.forEach(f => {
++        if (!mergedData[f] && record[f]) {
++          mergedData[f] = record[f];
++          changes = true;
++        }
++      });
++
++      if (changes) {
++        db.updateRecord(collection, duplicateRecord.id, mergedData, user);
++      }
++
++      // Soft archive the current record as it's merged
++      db.updateRecord(collection, recordId, { status: 'Archived', remarks: `Merged into ${duplicateRecord.id}` }, user);
++
++      db.logAudit('duplicate_merge', `Merged ${recordId} into ${duplicateRecord.id}`, user);
++      db.logActivity('update', 'Merged duplicate', collection, duplicateRecord.id, user);
++
++      this.render();
++    }
++  }
++
+   saveRecord() {
+     const user = auth.getCurrentUser();
+     if (user.role === 'employee') return;
+@@ -228,18 +328,19 @@ class DatabaseManager {
+ 
+     let data = {};
+     schema.fields.forEach(field => {
+-      data[field] = document.getElementById(`db-f-${field}`).value.trim();
++      const val = document.getElementById(`db-f-${field}`).value.trim();
++      data[field] = val;
+     });
+ 
+-    const globalRecords = db.getRecords(collection, {role: 'manager'}); // full list for dup detection
+-    const accessibleRecords = db.getRecords(collection, user); // scope for merging
++    const globalRecords = db.getRecords(collection, {role: 'manager'});
++    const accessibleRecords = db.getRecords(collection, user);
+     const duplicateKeys = schema.duplicateKeys || [];
+ 
+-    // Check Duplicates
++    // Check Duplicates automatically on Save
+     let duplicateRecord = null;
+     if (duplicateKeys.length > 0) {
+       for (let r of globalRecords) {
+-        if (recordId && r.id === recordId) continue; // Skip self
++        if (recordId && r.id === recordId) continue;
+ 
+         let isDup = false;
+         for (let key of duplicateKeys) {
+@@ -259,18 +360,16 @@ class DatabaseManager {
+ 
+     if (duplicateRecord) {
+       const isAccessible = accessibleRecords.some(r => r.id === duplicateRecord.id);
+-      
+       if (!isAccessible) {
+         alert("Duplicate exists outside your access scope. Please ask a Manager to review.");
+         return;
+       }
+ 
+-      const confirmMerge = confirm(`Duplicate detected for this record (Matched existing record ID: ${duplicateRecord.id}).\n\nDo you want to merge these details? This will only fill empty fields on the existing record and keep the original ID.`);
++      const confirmMerge = confirm(`Duplicate detected for this record (Matched existing record ID: ${duplicateRecord.id}).\\n\\nDo you want to merge these details? This will only fill empty fields on the existing record and keep the original ID.`);
+       if (!confirmMerge) {
+-        return; // Abort
++        return;
+       }
+ 
+-      // Merge Logic: only fill empty fields
+       let mergedData = { ...duplicateRecord };
+       let changesMade = false;
+ 
+@@ -283,36 +382,51 @@ class DatabaseManager {
+ 
+       if (changesMade) {
+         db.updateRecord(collection, duplicateRecord.id, mergedData, user);
+-        db.logAudit('duplicate_merge', `Merged data into existing ${collection} ${duplicateRecord.id}`, user, duplicateRecord.team_id);
++        db.logAudit('duplicate_merge', `Merged data into existing ${collection} ${duplicateRecord.id}`, user);
+         db.logActivity('update', `Merged duplicate data`, collection, duplicateRecord.id, user);
+       }
+ 
+       document.getElementById('modal-database').classList.add('hidden');
+-      this.renderCollection(collection);
++      this.render();
+       return;
      }
  
-     if (window.pipelineManager) window.pipelineManager.render();
-@@ -359,6 +410,89 @@ class DealsManager {
-       alert('Vendor not found.');
+-    // Normal Save
+     if (recordId) {
+       db.updateRecord(collection, recordId, data, user);
+     } else {
++      if (collection === 'leads') data.status = 'Open';
+       db.createRecord(collection, data, user);
+     }
+ 
+     document.getElementById('modal-database').classList.add('hidden');
+-    this.renderCollection(collection);
++    this.render();
+   }
+ 
+-  deleteRecord(collection, id) {
++  archiveRecord(collection, id) {
+     const user = auth.getCurrentUser();
+     if (user.role === 'employee') return;
+-    if (!confirm('Are you sure you want to delete this record?')) return;
++    if (!confirm('Are you sure you want to archive this record?')) return;
++
++    db.updateRecord(collection, id, { status: 'Archived', archived: 'Yes' }, user);
++    db.logAudit('archive', `Archived ${collection} record ${id}`, user);
++    db.logActivity('archive', `Archived ${collection}`, collection, id, user);
++    this.render();
++  }
+ 
+-    try {
+-      db.deleteRecord(collection, id, user);
+-      this.renderCollection(collection);
+-    } catch (e) {
+-      alert(e.message);
++  goToImport() {
++    const user = auth.getCurrentUser();
++    if (user.role === 'employee') {
++      alert('You do not have permission to import data.');
++      return;
++    }
++    document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('active'));
++    document.getElementById('tab-settings').classList.add('active');
++
++    // Focus import collection
++    const importColl = document.getElementById('import-collection');
++    if (importColl) {
++      importColl.focus();
++      importColl.scrollIntoView({ behavior: 'smooth' });
      }
    }
-+
-+  convertFromRequirement() {
-+    const user = auth.getCurrentUser();
-+    const reqs = db.getRecords('requirements', user);
-+    const deals = db.getRecords('deals', user);
-+    const convertedReqIds = deals.map(d => d.req_id || d.requirement_id).filter(id => !!id);
-+
-+    const eligibleReqs = reqs.filter(r => {
-+      if (r.status === 'Converted' || r.converted_deal_id || convertedReqIds.includes(r.id)) return false;
-+      const confirmAllowed = ['Verbal Approval', 'Email Approval', 'Internal Approval'];
-+      return r.po_status === 'Received' || r.approval_status === 'Approved' || confirmAllowed.includes(r.confirmation_type);
-+    });
-+
-+    if (eligibleReqs.length === 0) {
-+      return alert('No eligible requirements found. Must have PO Received, Proposal Approved, or explicit Confirmation, and not already be converted.');
-+    }
-+
-+    const optionsStr = eligibleReqs.map(r => `${r.id}: ${r.title}`).join('\\n');
-+    const input = prompt(`Enter Requirement ID to convert:\\n\\n${optionsStr}`);
-+    if (!input) return;
-+
-+    const req = eligibleReqs.find(r => r.id === input.trim());
-+    if (!req) return alert('Invalid Requirement ID');
-+
-+    this.openDealModal();
-+    const el = (id) => document.getElementById(id);
-+
-+    el('deal-req-id').value = req.id;
-+    el('deal-lead-id').value = req.lead_id || '';
-+    el('deal-project').value = req.title || '';
-+    el('deal-client').value = req.client_id || '';
-+    el('deal-contact').value = req.contact_id || '';
-+    el('deal-service').value = req.service_interest || '';
-+    el('deal-amount').value = req.po_amount || req.proposal_amount || req.budget || '';
-+    el('deal-owner').value = req.owner_id || user.id;
-+
-+    // Try to auto-pull selected candidate
-+    const cands = db.getRecords('sourcingCandidates', user).filter(c => c.requirement_id === req.id && c.evaluation_status === 'Selected');
-+    const selectedCand = cands.length > 0 ? cands[0] : null;
-+
-+    if (selectedCand) {
-+      if (selectedCand.candidate_type === 'Trainer') {
-+        el('deal-trainer-id').value = selectedCand.linked_trainer_id || '';
-+        el('deal-trainer-name').value = selectedCand.candidate_name || '';
-+      } else if (selectedCand.candidate_type === 'Vendor') {
-+        el('deal-vendor-id').value = selectedCand.linked_vendor_id || '';
-+        el('deal-vendor-name').value = selectedCand.candidate_name || '';
-+      }
-+      el('deal-trainer-rate').value = selectedCand.commercial_rate || '';
-+    }
-+
-+    alert('Deal form prepopulated from Requirement. Please verify and save.');
-+  }
-+
-+  focusField(fieldId) {
-+    const field = document.getElementById(fieldId);
-+    if (field) {
-+      field.focus();
-+      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-+    }
-+  }
-+
-+  markCompleted() {
-+    const dealId = document.getElementById('deal-id').value;
-+    if (!dealId) return alert('Please save the deal first.');
-+
-+    const el = (id) => document.getElementById(id);
-+    el('deal-status').value = 'Completed';
-+    el('deal-delivery-status').value = 'Completed';
-+    this.saveDeal();
-+    db.logActivity('status_change', 'Deal marked as Completed', 'deals', dealId, auth.getCurrentUser());
-+  }
-+
-+  closeDeal() {
-+    const dealId = document.getElementById('deal-id').value;
-+    if (!dealId) return alert('Please save the deal first.');
-+
-+    const el = (id) => document.getElementById(id);
-+    el('deal-status').value = 'Closed';
-+    el('deal-closure').value = 'Closed';
-+    this.saveDeal();
-+    db.logActivity('status_change', 'Deal marked as Closed', 'deals', dealId, auth.getCurrentUser());
-+  }
  }
+diff --git a/js/db.js b/js/db.js
+index 597fec2..9b015f3 100644
+--- a/js/db.js
++++ b/js/db.js
+@@ -217,7 +217,7 @@ class Database {
+   }
  
- document.addEventListener('DOMContentLoaded', () => {
+   logAudit(action, details, user, team_id = 'none') {
+-    const allowedActions = ['login', 'logout', 'create', 'update', 'delete', 'assign', 'approve', 'import', 'export', 'stage_change', 'profile_shared', 'candidate_selected', 'candidate_shortlisted', 'proposal_update', 'po_update', 'convert_to_deal', 'deal_update', 'trainer_assigned', 'vendor_assigned', 'delivery_update', 'invoice_update', 'payment_update', 'feedback_update', 'close_deal', 'delete_attempt', 'duplicate_merge', 'status_change'];
++    const allowedActions = ['login', 'logout', 'create', 'update', 'delete', 'archive', 'assign', 'approve', 'import', 'export', 'stage_change', 'profile_shared', 'candidate_selected', 'candidate_shortlisted', 'proposal_update', 'po_update', 'convert_to_deal', 'deal_update', 'trainer_assigned', 'vendor_assigned', 'delivery_update', 'invoice_update', 'payment_update', 'feedback_update', 'close_deal', 'delete_attempt', 'duplicate_merge', 'status_change'];
+     if (!allowedActions.includes(action)) return;
+ 
+     const audits = JSON.parse(localStorage.getItem('crm_auditLogs') || '[]');
+diff --git a/js/schema.js b/js/schema.js
+index 4850416..68486ee 100644
+--- a/js/schema.js
++++ b/js/schema.js
+@@ -8,7 +8,7 @@ window.crmSchema = {
+     duplicateKeys: ['name']
+   },
+   serviceLines: {
+-    fields: ['name', 'description', 'status'],
++    fields: ['name', 'category', 'service_type', 'technology_topic', 'description', 'status', 'remarks'],
+     duplicateKeys: ['name']
+   },
+   leads: {
+@@ -23,11 +23,11 @@ window.crmSchema = {
+     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
+   },
+   contacts: {
+-    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'client_id', 'job_title', 'department', 'primary_contact'],
++    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'client_id', 'job_title', 'department', 'primary_contact', 'designation', 'company_name', 'relationship_type', 'contact_type', 'vendor_id', 'trainer_id', 'lead_id', 'owner_id', 'remarks'],
+     duplicateKeys: ['email', 'phone', 'linkedin']
+   },
+   clients: {
+-    fields: ['company_name', 'industry', 'website', 'gst', 'billing_address', 'shipping_address', 'account_tier', 'annual_revenue'],
++    fields: ['company_name', 'industry', 'company_size', 'website', 'city', 'country', 'gst', 'billing_address', 'shipping_address', 'primary_contact', 'relationship_status', 'remarks', 'account_tier', 'annual_revenue'],
+     duplicateKeys: ['company_name', 'gst']
+   },
+   requirements: {
+@@ -56,11 +56,11 @@ window.crmSchema = {
+     duplicateKeys: []
+   },
+   trainers: {
+-    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'expertise', 'daily_rate', 'availability', 'certifications'],
++    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'expertise', 'daily_rate', 'availability', 'certifications', 'city', 'skills', 'experience', 'past_clients', 'commercial_rate', 'mode_preference', 'travel_flexibility', 'recording_capability', 'feedback_rating', 'vendor_status', 'vendor_id', 'documents', 'remarks'],
+     duplicateKeys: ['email', 'phone', 'linkedin']
+   },
+   vendors: {
+-    fields: ['company_name', 'services_provided', 'email', 'phone', 'gst', 'website', 'point_of_contact', 'payment_terms'],
++    fields: ['company_name', 'services_provided', 'email', 'phone', 'gst', 'website', 'point_of_contact', 'payment_terms', 'vendor_contact', 'city', 'service_area', 'trainer_pool_strength', 'commercial_model', 'past_work', 'reliability_rating', 'remarks'],
+     duplicateKeys: ['company_name', 'email', 'gst']
+   },
+   deals: {
 ```
 
 ## Tests Run
 ```text
-git diff --check; node --check js/deals.js; node --check js/app.js; node --check js/schema.js; node --check js/db.js; node --check js/requirements.js; node --check js/pipeline.js; node --check js/leads.js; node --check js/dashboard.js; node --check js/database.js; node --check js/reports.js; node --check js/settings.js; node --check js/import.js
+git diff --check; node --check js/database.js; node --check js/schema.js; node --check js/db.js; node --check js/app.js; node --check js/leads.js; node --check js/deals.js; node --check js/requirements.js; node --check js/pipeline.js; node --check js/dashboard.js; node --check js/reports.js; node --check js/settings.js; node --check js/import.js
 ```
 
 ## Risks / Pending Checks

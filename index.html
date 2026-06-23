@@ -360,8 +360,13 @@
 
       <div id="tab-database" class="tab-pane">
         <div class="card">
-          <h3>Database Master Lists</h3>
-          <p>Central repository for master data. Search and manage existing records across the system.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>Database Master Lists</h3>
+              <p>Central repository for master data. Search and manage existing records across the system.</p>
+            </div>
+            <button class="btn btn-secondary btn-db-add" onclick="window.databaseManager.goToImport()">Import Data</button>
+          </div>
         </div>
 
         <div class="card">
@@ -375,7 +380,25 @@
 
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Contacts</h3>
+            <h3>Leads Master</h3>
+            <!-- No add button here, leads added via Leads Tab -->
+          </div>
+          <input type="text" id="db-search-leads" class="form-control" placeholder="Search Leads..." style="margin: 10px 0; max-width: 300px;">
+          <div id="db-leads-list" class="table-container"></div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Normal Contacts</h3>
+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('contacts', null, { contact_type: 'Normal' })">+ Add Normal Contact</button>
+          </div>
+          <input type="text" id="db-search-normal-contacts" class="form-control" placeholder="Search Normal Contacts..." style="margin: 10px 0; max-width: 300px;">
+          <div id="db-normal-contacts-list" class="table-container"></div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Contacts (Linked)</h3>
             <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('contacts')">+ Add Contact</button>
           </div>
           <input type="text" id="db-search-contacts" class="form-control" placeholder="Search Contacts..." style="margin: 10px 0; max-width: 300px;">
@@ -402,29 +425,11 @@
 
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Service Lines / Training Categories</h3>
+            <h3>Service Database</h3>
             <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('serviceLines')">+ Add Service Line</button>
           </div>
           <input type="text" id="db-search-serviceLines" class="form-control" placeholder="Search Service Lines..." style="margin: 10px 0; max-width: 300px;">
           <div id="db-serviceLines-list" class="table-container"></div>
-        </div>
-
-        <div class="card db-admin-only" id="db-admin-users" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Users</h3>
-            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('users')">+ Add User</button>
-          </div>
-          <input type="text" id="db-search-users" class="form-control" placeholder="Search Users..." style="margin: 10px 0; max-width: 300px;">
-          <div id="db-users-list" class="table-container"></div>
-        </div>
-
-        <div class="card db-admin-only" id="db-admin-teams" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Teams</h3>
-            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('teams')">+ Add Team</button>
-          </div>
-          <input type="text" id="db-search-teams" class="form-control" placeholder="Search Teams..." style="margin: 10px 0; max-width: 300px;">
-          <div id="db-teams-list" class="table-container"></div>
         </div>
       </div>
 
@@ -479,6 +484,7 @@
               <option value="requirements">Requirements</option>
               <option value="trainers">Trainers</option>
               <option value="vendors">Vendors</option>
+              <option value="serviceLines">Service Lines</option>
             </select>
           </div>
           <div class="form-group">
