@@ -1,6 +1,6 @@
 window.crmSchema = {
   users: {
-    fields: ['first_name', 'last_name', 'email', 'role', 'team_id', 'status'],
+    fields: ['first_name', 'last_name', 'email', 'role', 'department', 'team_id', 'status', 'permissions_view', 'permissions_add', 'permissions_edit', 'permissions_delete', 'permissions_export', 'assignable_to_leads', 'assignable_to_requirements', 'assignable_to_deals', 'password_reset_required', 'remarks'],
     duplicateKeys: ['email']
   },
   teams: {

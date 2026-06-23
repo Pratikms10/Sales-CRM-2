@@ -1113,6 +1113,109 @@
   <script src="js/import.js"></script>
   <script src="js/auth.js"></script>
 
+  <!-- Settings User Modal -->
+  <div id="modal-settings-user" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 id="modal-settings-user-title">Manage User</h3>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-settings-user').classList.add('hidden')">Close</button>
+      </div>
+      <form id="form-settings-user">
+        <input type="hidden" id="settings-user-id">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group"><label>First Name</label><input type="text" id="settings-user-firstname" class="form-control" required></div>
+          <div class="form-group"><label>Last Name</label><input type="text" id="settings-user-lastname" class="form-control" required></div>
+          <div class="form-group"><label>Email</label><input type="email" id="settings-user-email" class="form-control" required></div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="settings-user-role" class="form-control" required>
+              <option value="employee">Employee</option>
+              <option value="team_lead">Team Lead</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <select id="settings-user-department" class="form-control">
+              <option value="Sales">Sales</option>
+              <option value="Presales">Presales</option>
+              <option value="Sourcing">Sourcing</option>
+              <option value="Operations">Operations</option>
+              <option value="Finance">Finance</option>
+              <option value="Management">Management</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Team ID</label>
+            <input type="text" id="settings-user-team" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="settings-user-status" class="form-control">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="settings-user-reset">
+            <label for="settings-user-reset" style="margin: 0; font-weight: normal;">Require Password Reset on Login</label>
+          </div>
+        </div>
+        <div style="margin-top: 16px;">
+          <h4>Permissions & Owner Mapping</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+            <label><input type="checkbox" id="perm-view"> View</label>
+            <label><input type="checkbox" id="perm-add"> Add</label>
+            <label><input type="checkbox" id="perm-edit"> Edit</label>
+            <label><input type="checkbox" id="perm-delete"> Delete</label>
+            <label><input type="checkbox" id="perm-export"> Export</label>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+            <label><input type="checkbox" id="assign-leads"> Assignable to Leads</label>
+            <label><input type="checkbox" id="assign-reqs"> Assignable to Reqs</label>
+            <label><input type="checkbox" id="assign-deals"> Assignable to Deals</label>
+          </div>
+        </div>
+        <div style="margin-top: 20px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Role Modal -->
+  <div id="modal-settings-role" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Configure Role Permissions</h3>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-settings-role').classList.add('hidden')">Close</button>
+      </div>
+      <form id="form-settings-role">
+        <div class="form-group">
+          <label>Target Role</label>
+          <select id="settings-role-target" class="form-control" required>
+            <option value="manager">Manager</option>
+            <option value="team_lead">Team Lead</option>
+            <option value="employee">Employee</option>
+          </select>
+        </div>
+        <div style="margin-top: 16px;">
+          <h4>Default Permissions</h4>
+          <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px;">
+            <label><input type="checkbox" id="role-perm-view"> View Access</label>
+            <label><input type="checkbox" id="role-perm-add"> Create Records</label>
+            <label><input type="checkbox" id="role-perm-edit"> Update Records</label>
+            <label><input type="checkbox" id="role-perm-delete"> Delete Records</label>
+            <label><input type="checkbox" id="role-perm-export"> Export Data</label>
+          </div>
+        </div>
+        <div style="margin-top: 20px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Save Role Permissions</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Database Master Modal -->
   <div id="modal-database" class="modal-overlay hidden">
     <div class="modal" style="max-width: 600px;">
