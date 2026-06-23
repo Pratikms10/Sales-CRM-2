@@ -41,6 +41,7 @@
       renderAudits();
       if (window.leadsManager) window.leadsManager.render();
       if (window.pipelineManager) window.pipelineManager.render();
+      if (window.requirementsManager) window.requirementsManager.render();
     } else {
       loginView.classList.remove('hidden');
       appView.classList.add('hidden');
@@ -98,6 +99,9 @@
       }
       if (tabName === 'pipeline' && window.pipelineManager) {
         window.pipelineManager.render();
+      }
+      if (tabName === 'sourcing' && window.requirementsManager) {
+        window.requirementsManager.render();
       }
     });
   });

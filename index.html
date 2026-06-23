@@ -207,9 +207,83 @@
       </div>
 
       <div id="tab-sourcing" class="tab-pane">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h3>Requirements & Sourcing</h3>
+            <p>Fulfill client needs.</p>
+          </div>
+          <button class="btn btn-primary" onclick="window.requirementsManager.openRequirementModal()">+ Add Requirement</button>
+        </div>
+
         <div class="card">
-          <h3>Requirements & Sourcing</h3>
-          <p>Fulfill client needs.</p>
+          <div class="filter-bar" id="req-filter-bar">
+            <input type="text" id="req-filter-owner" placeholder="Filter by Owner ID" style="width: 150px;">
+            <select id="req-filter-service">
+              <option value="">All Services</option>
+              <option value="Corporate Training">Corporate Training</option>
+              <option value="Video Content Development">Video Content Development</option>
+              <option value="Automation Consulting">Automation Consulting</option>
+            </select>
+            <select id="req-filter-priority">
+              <option value="">All Priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <select id="req-filter-proposal">
+              <option value="">All Proposal Status</option>
+              <option value="Not Started">Not Started</option>
+              <option value="Draft">Draft</option>
+              <option value="Shared">Shared</option>
+              <option value="Revised">Revised</option>
+              <option value="Approved">Approved</option>
+            </select>
+            <select id="req-filter-po">
+              <option value="">All PO Status</option>
+              <option value="Not Required">Not Required</option>
+              <option value="Pending">Pending</option>
+              <option value="Received">Received</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select id="req-filter-sla">
+              <option value="">All SLA Status</option>
+              <option value="Same Day">Same Day</option>
+              <option value="24h">24h</option>
+              <option value="36h">36h</option>
+              <option value="48h">48h</option>
+              <option value="Breached">Breached</option>
+            </select>
+            <select id="req-filter-stage">
+              <option value="">All Stages</option>
+              <option value="Requirement Gathering">Requirement Gathering</option>
+              <option value="Proposal Shared">Proposal Shared</option>
+              <option value="PO Pending">PO Pending</option>
+              <option value="Sourcing">Sourcing</option>
+              <option value="Converted">Converted</option>
+              <option value="Dormant">Dormant</option>
+              <option value="Lost">Lost</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Req Title</th>
+                  <th>Client</th>
+                  <th>Service</th>
+                  <th>Proposal</th>
+                  <th>PO</th>
+                  <th>SLA</th>
+                  <th>Stage</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="req-table-body">
+                <!-- Requirements injected here -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -421,12 +495,240 @@
     </div>
   </div>
 
+  <!-- Requirement Detail Modal -->
+  <div id="modal-req" class="modal-overlay hidden">
+    <div class="modal" style="width: 900px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 id="modal-req-title">Requirement Details</h3>
+        <button class="btn btn-secondary" id="btn-close-req-modal">Close</button>
+      </div>
+      <form id="form-req">
+        <input type="hidden" id="req-id">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Intake Fields -->
+          <div class="card" style="padding: 12px;">
+            <h4>1. Intake Details</h4>
+            <div class="form-group"><label>Title</label><input type="text" id="req-title" class="form-control" required></div>
+            <div class="form-group"><label>Client ID</label><input type="text" id="req-client-id" class="form-control"></div>
+            <div class="form-group"><label>Service Type</label>
+              <select id="req-service" class="form-control">
+                <option value="">None</option>
+                <option value="Corporate Training">Corporate Training</option>
+                <option value="Video Content Development">Video Content Development</option>
+                <option value="Automation Consulting">Automation Consulting</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Technology/Topic</label><input type="text" id="req-tech" class="form-control"></div>
+            <div class="form-group"><label>Audience</label><input type="text" id="req-audience" class="form-control"></div>
+            <div class="form-group"><label>Duration</label><input type="text" id="req-duration" class="form-control"></div>
+            <div class="form-group"><label>Mode</label>
+              <select id="req-mode" class="form-control">
+                <option value="Online">Online</option>
+                <option value="Offline">Offline</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Location</label><input type="text" id="req-location" class="form-control"></div>
+            <div class="form-group"><label>Preferred Dates</label><input type="text" id="req-dates" class="form-control"></div>
+            <div class="form-group"><label>Budget</label><input type="number" id="req-budget" class="form-control"></div>
+            <div class="form-group"><label>Trainer Type</label>
+              <select id="req-trainer-type" class="form-control">
+                <option value="Freelancer">Freelancer</option>
+                <option value="Vendor Trainer">Vendor Trainer</option>
+                <option value="Internal Trainer">Internal Trainer</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Lab Needs</label><input type="text" id="req-lab" class="form-control"></div>
+            <div class="form-group"><label>Recording Needs</label><input type="text" id="req-recording" class="form-control"></div>
+            <div class="form-group"><label>Priority</label>
+              <select id="req-priority" class="form-control">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Owner ID</label><input type="text" id="req-owner" class="form-control"></div>
+          </div>
+          <!-- Proposal / PO Fields -->
+          <div class="card" style="padding: 12px;">
+            <h4>2. Proposal & PO</h4>
+            <div class="form-group"><label>Proposal Status</label>
+              <select id="req-prop-status" class="form-control">
+                <option value="Not Started">Not Started</option>
+                <option value="Draft">Draft</option>
+                <option value="Shared">Shared</option>
+                <option value="Revised">Revised</option>
+                <option value="Approved">Approved</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Proposal Number</label><input type="text" id="req-prop-num" class="form-control"></div>
+            <div class="form-group"><label>Proposal Date</label><input type="date" id="req-prop-date" class="form-control"></div>
+            <div class="form-group"><label>Proposal Amount</label><input type="number" id="req-prop-amt" class="form-control"></div>
+            <div class="form-group"><label>Proposal Version</label><input type="text" id="req-prop-ver" class="form-control"></div>
+            <div class="form-group"><label>Approval Status</label>
+              <select id="req-prop-appr" class="form-control">
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <hr style="margin: 10px 0;">
+            <div class="form-group"><label>PO Status</label>
+              <select id="req-po-status" class="form-control">
+                <option value="Not Required">Not Required</option>
+                <option value="Pending">Pending</option>
+                <option value="Received">Received</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="form-group"><label>PO Number</label><input type="text" id="req-po-num" class="form-control"></div>
+            <div class="form-group"><label>PO Amount</label><input type="number" id="req-po-amt" class="form-control"></div>
+            <div class="form-group"><label>PO Received Date</label><input type="date" id="req-po-date" class="form-control"></div>
+            <div class="form-group"><label>PO Attachment Ref</label><input type="text" id="req-po-att" class="form-control"></div>
+            <div class="form-group"><label>Commercial Remarks</label><textarea id="req-comm-remarks" class="form-control" rows="2"></textarea></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;" id="sourcing-tracker-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h4>3. Sourcing Tracker</h4>
+            <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.openCandidateModal()">+ Add Candidate</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Match</th>
+                  <th>Rate</th>
+                  <th>Status</th>
+                  <th>Shared</th>
+                  <th>Feedback</th>
+                  <th>SLA</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sourcing-table-body">
+                <!-- Sourcing Candidates injected here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; display: flex; gap: 10px;">
+          <button type="submit" class="btn btn-primary">Save Requirement</button>
+          <button type="button" class="btn btn-secondary" id="btn-convert-deal" onclick="window.requirementsManager.convertToDeal()">Convert to Deal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sourcing Candidate Modal -->
+  <div id="modal-candidate" class="modal-overlay hidden">
+    <div class="modal" style="width: 700px; max-width: 95vw;">
+      <div class="modal-header">
+        <h3 id="modal-candidate-title">Add/Edit Candidate</h3>
+        <button class="btn btn-secondary" id="btn-close-candidate-modal">Close</button>
+      </div>
+      <form id="form-candidate">
+        <input type="hidden" id="cand-id">
+        <input type="hidden" id="cand-trainer-id">
+        <input type="hidden" id="cand-vendor-id">
+        <div style="margin-bottom: 15px; display:flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.selectExistingTrainer()">Select Existing Trainer</button>
+          <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.selectExistingVendor()">Select Existing Vendor</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group"><label>Candidate Name</label><input type="text" id="cand-name" class="form-control" required></div>
+          <div class="form-group"><label>Candidate Type</label>
+            <select id="cand-type" class="form-control">
+              <option value="Trainer">Trainer</option>
+              <option value="Vendor">Vendor</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Source</label>
+            <select id="cand-source" class="form-control">
+              <option value="Existing Database">Existing Database</option>
+              <option value="Vendor">Vendor</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Referral">Referral</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Skill Match</label>
+            <select id="cand-match" class="form-control">
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Experience</label><input type="text" id="cand-exp" class="form-control"></div>
+          <div class="form-group"><label>Commercial Rate</label><input type="number" id="cand-rate" class="form-control"></div>
+          <div class="form-group"><label>Availability</label>
+            <select id="cand-avail" class="form-control">
+              <option value="Available">Available</option>
+              <option value="Tentative">Tentative</option>
+              <option value="Not Available">Not Available</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Location Fit</label>
+            <select id="cand-loc" class="form-control">
+              <option value="Same City">Same City</option>
+              <option value="Travel Needed">Travel Needed</option>
+              <option value="Remote Only">Remote Only</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Evaluation Status</label>
+            <select id="cand-eval" class="form-control">
+              <option value="Pending">Pending</option>
+              <option value="Shortlisted">Shortlisted</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Selected">Selected</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Profile Shared</label>
+            <select id="cand-shared" class="form-control">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Shared Date</label><input type="date" id="cand-shared-date" class="form-control"></div>
+          <div class="form-group"><label>Client Feedback</label>
+            <select id="cand-feedback" class="form-control">
+              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Hold">Hold</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px; padding: 12px;">
+          <h4>Trainer Evaluation</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group"><label>Communication</label><input type="text" id="eval-comm" class="form-control"></div>
+            <div class="form-group"><label>Subject Expertise</label><input type="text" id="eval-subj" class="form-control"></div>
+            <div class="form-group"><label>Past Experience</label><input type="text" id="eval-past" class="form-control"></div>
+            <div class="form-group"><label>Methodology</label><input type="text" id="eval-meth" class="form-control"></div>
+            <div class="form-group"><label>Commercial Fit</label><input type="text" id="eval-comm-fit" class="form-control"></div>
+            <div class="form-group"><label>Flexibility</label><input type="text" id="eval-flex" class="form-control"></div>
+          </div>
+          <div class="form-group" style="margin-top: 10px;"><label>Past Feedback</label><textarea id="eval-past-fb" class="form-control" rows="2"></textarea></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Save Candidate</button>
+      </form>
+    </div>
+  </div>
+
   <script src="js/schema.js"></script>
   <script src="js/db.js"></script>
   <script src="js/import.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/leads.js"></script>
   <script src="js/pipeline.js"></script>
+  <script src="js/requirements.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

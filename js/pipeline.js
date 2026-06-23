@@ -1,4 +1,4 @@
-class PipelineManager {
+﻿class PipelineManager {
   constructor() {
     this.board = document.getElementById('pipeline-board');
     this.stages = [
@@ -71,7 +71,7 @@ class PipelineManager {
       }
       return { ...l, type: 'lead' };
     });
-    
+
     const reqs = db.getRecords('requirements', user).map(r => {
       if (!r.pipeline_stage) {
         r.pipeline_stage = reqMap[r.status] || 'Requirement Gathering';
@@ -79,7 +79,7 @@ class PipelineManager {
       }
       return { ...r, type: 'requirement' };
     });
-    
+
     const deals = db.getRecords('deals', user).map(d => {
       if (!d.pipeline_stage) {
         d.pipeline_stage = dealMap[d.stage] || 'Proposal Shared';
@@ -231,7 +231,7 @@ class PipelineManager {
     const data = { pipeline_stage: newStage };
     const allRecords = db.getRecords(collection, user);
     const existing = allRecords.find(r => r.id === cardId);
-    
+
     // Mapping for fallback
     const leadMap = {
       'New': 'Prospecting', 'Contacted': 'Outreach', 'Interested': 'Follow-up',

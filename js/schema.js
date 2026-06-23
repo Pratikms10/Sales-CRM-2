@@ -1,4 +1,4 @@
-window.crmSchema = {
+﻿window.crmSchema = {
   users: {
     fields: ['first_name', 'last_name', 'email', 'role', 'team_id', 'status'],
     duplicateKeys: ['email']
@@ -26,12 +26,26 @@ window.crmSchema = {
     duplicateKeys: ['company_name', 'gst']
   },
   requirements: {
-    fields: ['title', 'description', 'client_id', 'budget', 'priority', 'status', 'skills_required', 'target_date', 'pipeline_stage', 'converted_deal_id'],
+    fields: [
+      'title', 'description', 'client_id', 'contact_id', 'lead_id', 'company_name', 'contact_person',
+      'budget', 'priority', 'status', 'pipeline_stage', 'converted_deal_id',
+      'service_interest', 'technology', 'audience', 'duration', 'mode', 'location',
+      'preferred_dates', 'trainer_type', 'lab_needs', 'recording_needs',
+      'proposal_status', 'po_status', 'proposal_number', 'proposal_date',
+      'proposal_amount', 'proposal_version', 'approval_status', 'po_number',
+      'po_amount', 'po_received_date', 'po_attachment', 'commercial_remarks', 'owner_id'
+    ],
     duplicateKeys: []
   },
   sourcingCandidates: {
-    fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'skills', 'experience_years', 'current_company', 'expected_salary', 'notice_period'],
-    duplicateKeys: ['email', 'phone', 'linkedin']
+    fields: [
+      'requirement_id', 'candidate_name', 'candidate_type', 'source', 'skill_match',
+      'experience', 'commercial_rate', 'availability', 'location_fit', 'evaluation_status',
+      'profile_shared', 'shared_date', 'client_feedback', 'sla_status', 'remarks',
+      'communication', 'subject_expertise', 'past_experience', 'methodology',
+      'commercial_fit', 'flexibility', 'past_feedback', 'linked_trainer_id', 'linked_vendor_id'
+    ],
+    duplicateKeys: []
   },
   trainers: {
     fields: ['first_name', 'last_name', 'email', 'phone', 'linkedin', 'expertise', 'daily_rate', 'availability', 'certifications'],
