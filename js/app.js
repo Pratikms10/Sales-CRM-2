@@ -40,6 +40,7 @@
       renderDatabaseTab();
       renderAudits();
       if (window.leadsManager) window.leadsManager.render();
+      if (window.pipelineManager) window.pipelineManager.render();
     } else {
       loginView.classList.remove('hidden');
       appView.classList.add('hidden');
@@ -94,6 +95,9 @@
 
       if (tabName === 'leads' && window.leadsManager) {
         window.leadsManager.render();
+      }
+      if (tabName === 'pipeline' && window.pipelineManager) {
+        window.pipelineManager.render();
       }
     });
   });

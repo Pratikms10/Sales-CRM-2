@@ -242,6 +242,27 @@
       leadData.owner_id = requestedOwner;
     }
 
+    const defaultMapping = {
+      'New': 'Prospecting',
+      'Contacted': 'Outreach',
+      'Interested': 'Follow-up',
+      'Follow-up': 'Follow-up',
+      'Requirement Expected': 'Requirement Gathering',
+      'Not Interested': 'Lost',
+      'Dormant': 'Dormant',
+      'Converted': 'Converted',
+      'Lost': 'Lost'
+    };
+
+    let oldLead = null;
+    if (leadId) {
+      oldLead = db.getRecords('leads', user).find(l => l.id === leadId);
+    }
+
+    if (!leadId || (oldLead && oldLead.status !== leadData.status)) {
+      leadData.pipeline_stage = defaultMapping[leadData.status] || 'Prospecting';
+    }
+
     let finalLeadId = leadId;
     if (leadId) {
       db.updateRecord('leads', leadId, leadData, user);
@@ -344,6 +365,7 @@
       client_id: client.id,
       priority: lead.priority,
       status: 'Open',
+      pipeline_stage: 'Requirement Gathering',
       source: 'Lead Conversion',
       lead_id: lead.id,
       contact_id: contact.id,
@@ -352,7 +374,11 @@
       service_interest: lead.service_interest
     }, user);
 
-    db.updateRecord('leads', lead.id, { status: 'Converted' }, user);
+    db.updateRecord('leads', lead.id, {
+      status: 'Converted',
+      pipeline_stage: 'Converted',
+      converted_requirement_id: requirement.id
+    }, user);
     db.logAudit('stage_change', `Lead ${lead.id} converted to requirement ${requirement.id}`, user, lead.team_id);
 
     alert("Successfully converted to Requirement!");

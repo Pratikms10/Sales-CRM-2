@@ -1,4 +1,4 @@
-﻿window.crmSchema = {
+window.crmSchema = {
   users: {
     fields: ['first_name', 'last_name', 'email', 'role', 'team_id', 'status'],
     duplicateKeys: ['email']
@@ -12,7 +12,8 @@
       'company_name', 'contact_person', 'designation', 'email', 'phone',
       'linkedin', 'website', 'industry', 'company_size', 'city', 'country',
       'service_interest', 'source', 'last_contact_date', 'next_follow_up_date',
-      'follow_up_type', 'last_discussion', 'remarks', 'priority'
+      'follow_up_type', 'last_discussion', 'remarks', 'priority',
+      'pipeline_stage', 'converted_requirement_id'
     ],
     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
   },
@@ -25,7 +26,7 @@
     duplicateKeys: ['company_name', 'gst']
   },
   requirements: {
-    fields: ['title', 'description', 'client_id', 'budget', 'priority', 'status', 'skills_required', 'target_date'],
+    fields: ['title', 'description', 'client_id', 'budget', 'priority', 'status', 'skills_required', 'target_date', 'pipeline_stage', 'converted_deal_id'],
     duplicateKeys: []
   },
   sourcingCandidates: {
@@ -41,7 +42,7 @@
     duplicateKeys: ['company_name', 'email', 'gst']
   },
   deals: {
-    fields: ['title', 'client_id', 'amount', 'close_date', 'stage', 'probability', 'next_step'],
+    fields: ['title', 'client_id', 'contact_id', 'amount', 'close_date', 'stage', 'probability', 'next_step', 'pipeline_stage', 'service_interest', 'priority', 'next_follow_up_date', 'requirement_id'],
     duplicateKeys: []
   },
   tasks: {
