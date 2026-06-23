@@ -1,0 +1,731 @@
+commit aa49f336925d3aad4e8274be07abb6d4b62477cb
+Author: Pratiksm10 <pratiklap123@gmail.com>
+Date:   Tue Jun 23 13:03:20 2026 +0530
+
+    Build leads tab and presales tracker
+
+diff --git a/css/style.css b/css/style.css
+index 6bbfc91..d8a0bd6 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -307,3 +307,80 @@ a:hover {
+ .hidden {
+   display: none !important;
+ }
++/* Sheet Style Table */
++.sheet-container {
++  overflow-x: auto;
++  background-color: var(--surface-card);
++  border-radius: var(--rounded-lg);
++  margin-bottom: var(--spacing-lg);
++}
++.sheet-table {
++  width: max-content;
++  min-width: 100%;
++  border-collapse: collapse;
++}
++.sheet-table th, .sheet-table td {
++  padding: 8px 12px;
++  text-align: left;
++  border: 1px solid var(--hairline);
++  white-space: nowrap;
++  font-size: 13px;
++}
++.sheet-table th {
++  background-color: var(--surface-dark-elevated);
++  color: var(--on-dark);
++  font-weight: 500;
++  position: sticky;
++  top: 0;
++}
++.sheet-table tbody tr:hover {
++  background-color: var(--canvas);
++}
++
++/* Modal */
++.modal-overlay {
++  position: fixed;
++  top: 0; left: 0; right: 0; bottom: 0;
++  background-color: rgba(20, 20, 19, 0.5);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  z-index: 1000;
++}
++.modal {
++  background-color: var(--canvas);
++  border-radius: var(--rounded-lg);
++  padding: var(--spacing-xl);
++  width: 90%;
++  max-width: 600px;
++  max-height: 90vh;
++  overflow-y: auto;
++}
++.modal-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: var(--spacing-lg);
++}
++
++/* Utility Badges */
++.badge-overdue { background-color: var(--error); color: white; }
++.badge-priority-high { background-color: var(--primary-active); color: white; }
++.badge-priority-medium { background-color: var(--warning); color: white; }
++.badge-priority-low { background-color: var(--success); color: white; }
++
++/* Filter Bar */
++.filter-bar {
++  display: flex;
++  gap: var(--spacing-md);
++  margin-bottom: var(--spacing-lg);
++  flex-wrap: wrap;
++  align-items: center;
++}
++.filter-bar input, .filter-bar select {
++  height: 36px;
++  padding: 0 10px;
++  font-size: 13px;
++  border-radius: var(--rounded-sm);
++  border: 1px solid var(--hairline);
++}
+diff --git a/index.html b/index.html
+index 9704bb0..9542c6e 100644
+--- a/index.html
++++ b/index.html
+@@ -71,8 +71,89 @@
+ 
+       <div id="tab-leads" class="tab-pane">
+         <div class="card">
+-          <h3>Leads</h3>
+-          <p>Manage your prospective clients.</p>
++          <div style="display: flex; justify-content: space-between; align-items: center;">
++            <h3>Leads Tracker</h3>
++            <button class="btn btn-primary" id="btn-add-lead">+ Add Lead</button>
++          </div>
++          <p>Presales tracking and lead management.</p>
++
++          <div class="filter-bar" id="leads-filter-bar">
++            <input type="text" id="lead-search" placeholder="Search company, contact, email..." style="width: 250px;">
++            <select id="lead-filter-status">
++              <option value="">All Statuses</option>
++              <option value="New">New</option>
++              <option value="Contacted">Contacted</option>
++              <option value="Interested">Interested</option>
++              <option value="Follow-up">Follow-up</option>
++              <option value="Requirement Expected">Requirement Expected</option>
++              <option value="Not Interested">Not Interested</option>
++              <option value="Dormant">Dormant</option>
++              <option value="Converted">Converted</option>
++              <option value="Lost">Lost</option>
++            </select>
++            <select id="lead-filter-priority">
++              <option value="">All Priorities</option>
++              <option value="High">High</option>
++              <option value="Medium">Medium</option>
++              <option value="Low">Low</option>
++            </select>
++            <select id="lead-filter-overdue">
++              <option value="">All Follow-ups</option>
++              <option value="overdue">Overdue Only</option>
++            </select>
++            <select id="lead-filter-service">
++              <option value="">All Services</option>
++              <option value="Corporate Training">Corporate Training</option>
++              <option value="Video Content Development">Video Content Development</option>
++              <option value="Automation Consulting">Automation Consulting</option>
++            </select>
++            <select id="lead-filter-source">
++              <option value="">All Sources</option>
++              <option value="LinkedIn">LinkedIn</option>
++              <option value="Referral">Referral</option>
++              <option value="Website">Website</option>
++              <option value="Campaign">Campaign</option>
++              <option value="Cold Call">Cold Call</option>
++              <option value="Email">Email</option>
++              <option value="Event">Event</option>
++              <option value="Existing Database">Existing Database</option>
++            </select>
++            <input type="date" id="lead-filter-date" title="Filter by Follow-up Date" style="width: 150px;">
++            <input type="text" id="lead-filter-owner" placeholder="Filter by Owner ID" style="width: 150px;">
++          </div>
++
++          <div class="sheet-container">
++            <table class="sheet-table" id="leads-sheet-table">
++              <thead>
++                <tr>
++                  <th>Action</th>
++                  <th>Company</th>
++                  <th>Contact Person</th>
++                  <th>Designation</th>
++                  <th>Email</th>
++                  <th>Phone</th>
++                  <th>LinkedIn</th>
++                  <th>Website</th>
++                  <th>Industry</th>
++                  <th>Company Size</th>
++                  <th>City</th>
++                  <th>Country</th>
++                  <th>Service Interest</th>
++                  <th>Source</th>
++                  <th>Status</th>
++                  <th>Last Contact</th>
++                  <th>Next Follow-up</th>
++                  <th>Follow-up Type</th>
++                  <th>Priority</th>
++                  <th>Owner</th>
++                  <th>Remarks / Last Discussion</th>
++                </tr>
++              </thead>
++              <tbody id="leads-table-body">
++                <!-- Rendered by leads.js -->
++              </tbody>
++            </table>
++          </div>
+         </div>
+       </div>
+ 
+@@ -177,10 +258,131 @@
+     </main>
+   </div>
+ 
++  <!-- Add/Edit Lead Modal -->
++  <div id="modal-lead" class="modal-overlay hidden">
++    <div class="modal">
++      <div class="modal-header">
++        <h3 id="modal-lead-title">Add Lead</h3>
++        <button class="btn btn-secondary" id="btn-close-lead-modal">Close</button>
++      </div>
++      <form id="form-lead">
++        <input type="hidden" id="lead-id">
++        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
++          <div class="form-group"><label>Company Name</label><input type="text" id="lead-company" class="form-control" required></div>
++          <div class="form-group"><label>Contact Person</label><input type="text" id="lead-contact" class="form-control" required></div>
++          <div class="form-group"><label>Designation</label><input type="text" id="lead-designation" class="form-control"></div>
++          <div class="form-group"><label>Email</label><input type="email" id="lead-email" class="form-control"></div>
++          <div class="form-group"><label>Phone</label><input type="text" id="lead-phone" class="form-control"></div>
++          <div class="form-group"><label>LinkedIn</label><input type="text" id="lead-linkedin" class="form-control"></div>
++          <div class="form-group"><label>Website</label><input type="text" id="lead-website" class="form-control"></div>
++          <div class="form-group"><label>Industry</label><input type="text" id="lead-industry" class="form-control"></div>
++          <div class="form-group"><label>Company Size</label><input type="text" id="lead-company-size" class="form-control"></div>
++          <div class="form-group"><label>City</label><input type="text" id="lead-city" class="form-control"></div>
++          <div class="form-group"><label>Country</label><input type="text" id="lead-country" class="form-control"></div>
++
++          <div class="form-group">
++            <label>Service Interest</label>
++            <select id="lead-service" class="form-control">
++              <option value="">None</option>
++              <option value="Corporate Training">Corporate Training</option>
++              <option value="Video Content Development">Video Content Development</option>
++              <option value="Automation Consulting">Automation Consulting</option>
++            </select>
++          </div>
++          <div class="form-group">
++            <label>Source</label>
++            <select id="lead-source" class="form-control">
++              <option value="">None</option>
++              <option value="LinkedIn">LinkedIn</option>
++              <option value="Referral">Referral</option>
++              <option value="Website">Website</option>
++              <option value="Campaign">Campaign</option>
++              <option value="Cold Call">Cold Call</option>
++              <option value="Email">Email</option>
++              <option value="Event">Event</option>
++              <option value="Existing Database">Existing Database</option>
++            </select>
++          </div>
++
++          <div class="form-group">
++            <label>Status</label>
++            <select id="lead-status" class="form-control">
++              <option value="New">New</option>
++              <option value="Contacted">Contacted</option>
++              <option value="Interested">Interested</option>
++              <option value="Follow-up">Follow-up</option>
++              <option value="Requirement Expected">Requirement Expected</option>
++              <option value="Not Interested">Not Interested</option>
++              <option value="Dormant">Dormant</option>
++              <option value="Lost">Lost</option>
++            </select>
++          </div>
++          <div class="form-group">
++            <label>Priority</label>
++            <select id="lead-priority" class="form-control">
++              <option value="Low">Low</option>
++              <option value="Medium">Medium</option>
++              <option value="High">High</option>
++            </select>
++          </div>
++          <div class="form-group"><label>Last Contact Date</label><input type="date" id="lead-last-contact" class="form-control"></div>
++          <div class="form-group"><label>Next Follow-up Date</label><input type="date" id="lead-next-followup" class="form-control"></div>
++          <div class="form-group">
++            <label>Follow-up Type</label>
++            <select id="lead-followup-type" class="form-control">
++              <option value="">None</option>
++              <option value="Call">Call</option>
++              <option value="Email">Email</option>
++              <option value="WhatsApp">WhatsApp</option>
++              <option value="LinkedIn">LinkedIn</option>
++              <option value="Meeting">Meeting</option>
++            </select>
++          </div>
++          <div class="form-group"><label>Owner ID (optional)</label><input type="text" id="lead-owner-id" class="form-control" placeholder="Assign to user ID"></div>
++        </div>
++        <div class="form-group" style="margin-top: 16px;">
++          <label>Remarks</label>
++          <textarea id="lead-remarks" class="form-control" rows="3"></textarea>
++        </div>
++        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Save Lead</button>
++      </form>
++    </div>
++  </div>
++
++  <!-- Log Activity Modal -->
++  <div id="modal-activity" class="modal-overlay hidden">
++    <div class="modal">
++      <div class="modal-header">
++        <h3>Log Activity</h3>
++        <button class="btn btn-secondary" id="btn-close-activity-modal">Close</button>
++      </div>
++      <form id="form-activity">
++        <input type="hidden" id="activity-lead-id">
++        <div class="form-group">
++          <label>Type</label>
++          <select id="activity-type" class="form-control">
++            <option value="Call">Call</option>
++            <option value="Email">Email</option>
++            <option value="WhatsApp">WhatsApp</option>
++            <option value="LinkedIn">LinkedIn</option>
++            <option value="Meeting">Meeting</option>
++            <option value="Note">Note</option>
++          </select>
++        </div>
++        <div class="form-group">
++          <label>Discussion / Notes</label>
++          <textarea id="activity-desc" class="form-control" rows="4" required></textarea>
++        </div>
++        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Log Activity</button>
++      </form>
++    </div>
++  </div>
++
+   <script src="js/schema.js"></script>
+   <script src="js/db.js"></script>
+   <script src="js/import.js"></script>
+   <script src="js/auth.js"></script>
++  <script src="js/leads.js"></script>
+   <script src="js/app.js"></script>
+ </body>
+ </html>
+diff --git a/js/app.js b/js/app.js
+index 3dd2db0..8112763 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -39,6 +39,7 @@
+       renderDashboard();
+       renderDatabaseTab();
+       renderAudits();
++      if (window.leadsManager) window.leadsManager.render();
+     } else {
+       loginView.classList.remove('hidden');
+       appView.classList.add('hidden');
+@@ -90,6 +91,10 @@
+       document.getElementById(`tab-${tabName}`).classList.add('active');
+ 
+       pageTitle.textContent = item.textContent;
++
++      if (tabName === 'leads' && window.leadsManager) {
++        window.leadsManager.render();
++      }
+     });
+   });
+ 
+diff --git a/js/leads.js b/js/leads.js
+new file mode 100644
+index 0000000..6e2df1f
+--- /dev/null
++++ b/js/leads.js
+@@ -0,0 +1,365 @@
++﻿class LeadsManager {
++  constructor() {
++    this.tableBody = document.getElementById('leads-table-body');
++    this.searchQuery = '';
++    this.filterStatus = '';
++    this.filterPriority = '';
++    this.filterOverdue = '';
++    this.filterService = '';
++    this.filterSource = '';
++    this.filterOwner = '';
++    this.filterDate = '';
++
++    this.bindEvents();
++  }
++
++  bindEvents() {
++    document.getElementById('lead-search').addEventListener('input', (e) => {
++      this.searchQuery = e.target.value.toLowerCase();
++      this.render();
++    });
++
++    document.getElementById('lead-filter-status').addEventListener('change', (e) => {
++      this.filterStatus = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-priority').addEventListener('change', (e) => {
++      this.filterPriority = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-overdue').addEventListener('change', (e) => {
++      this.filterOverdue = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-service').addEventListener('change', (e) => {
++      this.filterService = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-source').addEventListener('change', (e) => {
++      this.filterSource = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-date').addEventListener('change', (e) => {
++      this.filterDate = e.target.value;
++      this.render();
++    });
++
++    document.getElementById('lead-filter-owner').addEventListener('input', (e) => {
++      this.filterOwner = e.target.value.toLowerCase();
++      this.render();
++    });
++
++    document.getElementById('btn-add-lead').addEventListener('click', () => {
++      this.openLeadModal();
++    });
++
++    document.getElementById('btn-close-lead-modal').addEventListener('click', () => {
++      document.getElementById('modal-lead').classList.add('hidden');
++    });
++
++    document.getElementById('btn-close-activity-modal').addEventListener('click', () => {
++      document.getElementById('modal-activity').classList.add('hidden');
++    });
++
++    document.getElementById('form-lead').addEventListener('submit', (e) => {
++      e.preventDefault();
++      this.saveLead();
++    });
++
++    document.getElementById('form-activity').addEventListener('submit', (e) => {
++      e.preventDefault();
++      this.saveActivity();
++    });
++  }
++
++  render() {
++    if (!this.tableBody) return;
++
++    const user = auth.getCurrentUser();
++    if (!user) return;
++
++    let leads = db.getRecords('leads', user);
++
++    // Apply filters
++    leads = leads.filter(l => {
++      if (this.filterStatus && l.status !== this.filterStatus) return false;
++      if (this.filterPriority && l.priority !== this.filterPriority) return false;
++      if (this.filterService && l.service_interest !== this.filterService) return false;
++      if (this.filterSource && l.source !== this.filterSource) return false;
++
++      if (this.filterOwner && l.owner_id) {
++        if (!l.owner_id.toLowerCase().includes(this.filterOwner)) return false;
++      }
++
++      if (this.filterDate && l.next_follow_up_date !== this.filterDate) return false;
++
++      if (this.filterOverdue === 'overdue') {
++        if (!l.next_follow_up_date) return false;
++        const isOverdue = new Date(l.next_follow_up_date) < new Date(new Date().setHours(0,0,0,0));
++        if (!isOverdue) return false;
++      }
++
++      if (this.searchQuery) {
++        const text = `${l.company_name} ${l.contact_person} ${l.email} ${l.phone} ${l.linkedin}`.toLowerCase();
++        if (!text.includes(this.searchQuery)) return false;
++      }
++
++      return true;
++    });
++
++    let html = '';
++    const today = new Date(new Date().setHours(0,0,0,0));
++
++    leads.forEach(lead => {
++      let followUpHtml = lead.next_follow_up_date || '-';
++      if (lead.next_follow_up_date) {
++        const fuDate = new Date(lead.next_follow_up_date);
++        if (fuDate < today && lead.status !== 'Converted' && lead.status !== 'Lost' && lead.status !== 'Dormant') {
++          followUpHtml = `<span class="badge badge-overdue">${lead.next_follow_up_date}</span>`;
++        }
++      }
++
++      let priorityHtml = lead.priority || '-';
++      if (lead.priority) {
++        priorityHtml = `<span class="badge badge-priority-${lead.priority.toLowerCase()}">${lead.priority}</span>`;
++      }
++
++      html += `
++        <tr>
++          <td>
++            <button class="btn btn-secondary" onclick="window.leadsManager.openLeadModal('${lead.id}')" style="padding: 2px 6px; font-size: 11px;">Edit</button>
++            <button class="btn btn-secondary" onclick="window.leadsManager.openActivityModal('${lead.id}')" style="padding: 2px 6px; font-size: 11px;">Log</button>
++            ${lead.status !== 'Converted' ? `<button class="btn btn-primary" onclick="window.leadsManager.convertToRequirement('${lead.id}')" style="padding: 2px 6px; font-size: 11px;">Convert</button>` : ''}
++          </td>
++          <td>${lead.company_name || '-'}</td>
++          <td>${lead.contact_person || '-'}</td>
++          <td>${lead.designation || '-'}</td>
++          <td>${lead.email || '-'}</td>
++          <td>${lead.phone || '-'}</td>
++          <td>${lead.linkedin || '-'}</td>
++          <td>${lead.website || '-'}</td>
++          <td>${lead.industry || '-'}</td>
++          <td>${lead.company_size || '-'}</td>
++          <td>${lead.city || '-'}</td>
++          <td>${lead.country || '-'}</td>
++          <td>${lead.service_interest || '-'}</td>
++          <td>${lead.source || '-'}</td>
++          <td>${lead.status}</td>
++          <td>${lead.last_contact_date || '-'}</td>
++          <td>${followUpHtml}</td>
++          <td>${lead.follow_up_type || '-'}</td>
++          <td>${priorityHtml}</td>
++          <td>${lead.owner_id}</td>
++          <td><small><b>Rem:</b> ${lead.remarks || '-'}<br><b>Dis:</b> ${lead.last_discussion || '-'}</small></td>
++        </tr>
++      `;
++    });
++
++    if (leads.length === 0) {
++      html = `<tr><td colspan="21">No leads found.</td></tr>`;
++    }
++
++    this.tableBody.innerHTML = html;
++  }
++
++  openLeadModal(leadId = null) {
++    const user = auth.getCurrentUser();
++    const modalTitle = document.getElementById('modal-lead-title');
++    const form = document.getElementById('form-lead');
++
++    form.reset();
++    document.getElementById('lead-owner-id').placeholder = user.id;
++
++    if (leadId) {
++      modalTitle.textContent = 'Edit Lead';
++      const leads = db.getRecords('leads', user);
++      const lead = leads.find(l => l.id === leadId);
++
++      if (lead) {
++        document.getElementById('lead-id').value = lead.id;
++        document.getElementById('lead-company').value = lead.company_name || '';
++        document.getElementById('lead-contact').value = lead.contact_person || '';
++        document.getElementById('lead-designation').value = lead.designation || '';
++        document.getElementById('lead-email').value = lead.email || '';
++        document.getElementById('lead-phone').value = lead.phone || '';
++        document.getElementById('lead-linkedin').value = lead.linkedin || '';
++        document.getElementById('lead-website').value = lead.website || '';
++        document.getElementById('lead-industry').value = lead.industry || '';
++        document.getElementById('lead-company-size').value = lead.company_size || '';
++        document.getElementById('lead-city').value = lead.city || '';
++        document.getElementById('lead-country').value = lead.country || '';
++        document.getElementById('lead-source').value = lead.source || '';
++        document.getElementById('lead-last-contact').value = lead.last_contact_date || '';
++        document.getElementById('lead-followup-type').value = lead.follow_up_type || '';
++        document.getElementById('lead-status').value = lead.status || 'New';
++        document.getElementById('lead-priority').value = lead.priority || 'Medium';
++        document.getElementById('lead-next-followup').value = lead.next_follow_up_date || '';
++        document.getElementById('lead-service').value = lead.service_interest || '';
++        document.getElementById('lead-remarks').value = lead.remarks || '';
++        document.getElementById('lead-owner-id').value = lead.owner_id || '';
++      }
++    } else {
++      modalTitle.textContent = 'Add Lead';
++      document.getElementById('lead-id').value = '';
++    }
++
++    document.getElementById('modal-lead').classList.remove('hidden');
++  }
++
++  saveLead() {
++    const user = auth.getCurrentUser();
++    const leadId = document.getElementById('lead-id').value;
++
++    const leadData = {
++      company_name: document.getElementById('lead-company').value,
++      contact_person: document.getElementById('lead-contact').value,
++      designation: document.getElementById('lead-designation').value,
++      email: document.getElementById('lead-email').value,
++      phone: document.getElementById('lead-phone').value,
++      linkedin: document.getElementById('lead-linkedin').value,
++      website: document.getElementById('lead-website').value,
++      industry: document.getElementById('lead-industry').value,
++      company_size: document.getElementById('lead-company-size').value,
++      city: document.getElementById('lead-city').value,
++      country: document.getElementById('lead-country').value,
++      source: document.getElementById('lead-source').value,
++      last_contact_date: document.getElementById('lead-last-contact').value,
++      follow_up_type: document.getElementById('lead-followup-type').value,
++      status: document.getElementById('lead-status').value,
++      priority: document.getElementById('lead-priority').value,
++      next_follow_up_date: document.getElementById('lead-next-followup').value,
++      service_interest: document.getElementById('lead-service').value,
++      remarks: document.getElementById('lead-remarks').value
++    };
++
++    const requestedOwner = document.getElementById('lead-owner-id').value;
++    if (requestedOwner) {
++      leadData.owner_id = requestedOwner;
++    }
++
++    let finalLeadId = leadId;
++    if (leadId) {
++      db.updateRecord('leads', leadId, leadData, user);
++    } else {
++      const createdLead = db.createRecord('leads', leadData, user);
++      finalLeadId = createdLead.id;
++    }
++
++    if (leadData.next_follow_up_date && leadData.status !== 'Converted' && leadData.status !== 'Lost') {
++      db.createRecord('tasks', {
++        title: `Follow up with ${leadData.company_name}`,
++        description: `Scheduled via Lead Edit.`,
++        due_date: leadData.next_follow_up_date,
++        related_to: finalLeadId,
++        priority: leadData.priority,
++        status: 'Pending'
++      }, user, true);
++    }
++
++    document.getElementById('modal-lead').classList.add('hidden');
++    this.render();
++    if (window.renderDashboard) window.renderDashboard();
++  }
++
++  openActivityModal(leadId) {
++    document.getElementById('form-activity').reset();
++    document.getElementById('activity-lead-id').value = leadId;
++    document.getElementById('modal-activity').classList.remove('hidden');
++  }
++
++  saveActivity() {
++    const user = auth.getCurrentUser();
++    const leadId = document.getElementById('activity-lead-id').value;
++    const type = document.getElementById('activity-type').value;
++    const desc = document.getElementById('activity-desc').value;
++
++    db.logActivity(type, desc, 'leads', leadId, user);
++
++    db.updateRecord('leads', leadId, {
++      last_discussion: `${type}: ${desc}`,
++      last_contact_date: new Date().toISOString().split('T')[0]
++    }, user);
++
++    document.getElementById('modal-activity').classList.add('hidden');
++    this.render();
++  }
++
++  convertToRequirement(leadId) {
++    const user = auth.getCurrentUser();
++    const leads = db.getRecords('leads', user);
++    const lead = leads.find(l => l.id === leadId);
++
++    if (!lead) return alert("Lead not found.");
++    if (!confirm(`Convert ${lead.company_name} to Requirement? This will create a Client and Contact record if they don't exist.`)) return;
++
++    const clients = db.getRecords('clients', {role: 'manager'});
++    let client = clients.find(c =>
++      (c.company_name && c.company_name.toLowerCase() === lead.company_name.toLowerCase()) ||
++      (c.website && lead.website && c.website.toLowerCase() === lead.website.toLowerCase())
++    );
++
++    if (!client) {
++      client = db.createRecord('clients', {
++        company_name: lead.company_name,
++        industry: lead.industry,
++        website: lead.website
++      }, user);
++    }
++
++    const contacts = db.getRecords('contacts', {role: 'manager'});
++    let contact = contacts.find(c =>
++      (c.email && lead.email && c.email.toLowerCase() === lead.email.toLowerCase()) ||
++      (c.phone && lead.phone && c.phone === lead.phone) ||
++      (c.linkedin && lead.linkedin && c.linkedin.toLowerCase() === lead.linkedin.toLowerCase())
++    );
++
++    if (!contact) {
++      let fName = lead.contact_person || 'Unknown';
++      let lName = '';
++      if (fName.includes(' ')) {
++        const parts = fName.split(' ');
++        fName = parts[0];
++        lName = parts.slice(1).join(' ');
++      }
++
++      contact = db.createRecord('contacts', {
++        first_name: fName,
++        last_name: lName,
++        email: lead.email,
++        phone: lead.phone,
++        linkedin: lead.linkedin,
++        client_id: client.id,
++        job_title: lead.designation
++      }, user);
++    }
++
++    const requirement = db.createRecord('requirements', {
++      title: `${lead.service_interest || 'Service Request'} - ${lead.company_name}`,
++      description: `Converted from Lead. Remarks: ${lead.remarks || 'None'}`,
++      client_id: client.id,
++      priority: lead.priority,
++      status: 'Open',
++      source: 'Lead Conversion',
++      lead_id: lead.id,
++      contact_id: contact.id,
++      company_name: lead.company_name,
++      contact_person: lead.contact_person,
++      service_interest: lead.service_interest
++    }, user);
++
++    db.updateRecord('leads', lead.id, { status: 'Converted' }, user);
++    db.logAudit('stage_change', `Lead ${lead.id} converted to requirement ${requirement.id}`, user, lead.team_id);
++
++    alert("Successfully converted to Requirement!");
++    this.render();
++  }
++}
++
++document.addEventListener('DOMContentLoaded', () => {
++  window.leadsManager = new LeadsManager();
++});
+diff --git a/js/schema.js b/js/schema.js
+index 73bf627..a17c5a1 100644
+--- a/js/schema.js
++++ b/js/schema.js
+@@ -8,7 +8,12 @@
+     duplicateKeys: ['name']
+   },
+   leads: {
+-    fields: ['first_name', 'last_name', 'email', 'phone', 'company_name', 'job_title', 'source', 'score', 'industry', 'linkedin', 'address'],
++    fields: [
++      'company_name', 'contact_person', 'designation', 'email', 'phone',
++      'linkedin', 'website', 'industry', 'company_size', 'city', 'country',
++      'service_interest', 'source', 'last_contact_date', 'next_follow_up_date',
++      'follow_up_type', 'last_discussion', 'remarks', 'priority'
++    ],
+     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
+   },
+   contacts: {
