@@ -1,385 +1,135 @@
 ﻿# AI Change Audit Report
 
 ## Generated On
-2026-06-23_15-02-15
+2026-06-23_15-11-30
 
 ## Branch
 main
 
 ## Baseline Commit
-e89c301
+a42f5b2
 
 ## Task Summary
-Phase 7: Build Database Master Lists with safe delete and duplicate merge
+Phase 8: Build Reports and MIS workspace
 
 ## Git Status
 ```text
  M index.html
  M js/app.js
- A js/database.js
- M js/db.js
- M js/schema.js
+ A js/reports.js
 ```
 
 ## Files Changed
 ```text
 M	index.html
 M	js/app.js
-A	js/database.js
-M	js/db.js
-M	js/schema.js
+A	js/reports.js
 ```
 
 ## Change Summary
 ```text
- index.html     |  89 +++++++++++++---
- js/app.js      |  15 ++-
- js/database.js | 322 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- js/db.js       |  54 +++++++++-
- js/schema.js   |   4 +
- 5 files changed, 459 insertions(+), 25 deletions(-)
+ index.html    |  36 +++++-
+ js/app.js     |   5 +-
+ js/reports.js | 401 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 439 insertions(+), 3 deletions(-)
 ```
 
 ## Full Diff
 ```diff
 diff --git a/index.html b/index.html
-index 535c82a..49c5aac 100644
+index 49c5aac..943a992 100644
 --- a/index.html
 +++ b/index.html
-@@ -1,4 +1,4 @@
--∩╗┐<!DOCTYPE html>
-+<!DOCTYPE html>
- <html lang="en">
- <head>
-   <meta charset="UTF-8">
-@@ -356,32 +356,70 @@
-       <div id="tab-database" class="tab-pane">
-         <div class="card">
-           <h3>Database Master Lists</h3>
--          <p>Central repository for master data.</p>
-+          <p>Central repository for master data. Search and manage existing records across the system.</p>
-         </div>
+@@ -425,8 +425,39 @@
  
+       <div id="tab-reports" class="tab-pane">
          <div class="card">
--          <h3>Clients</h3>
--          <div id="db-clients-list"></div>
+-          <h3>Reports / MIS</h3>
+-          <p>Analytics based on your role access.</p>
 +          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Clients</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('clients')">+ Add Client</button>
++            <div>
++              <h3>Reports / MIS</h3>
++              <p>Analytics based on your role access.</p>
++            </div>
++            <button class="btn btn-primary" onclick="window.reportsManager.exportCSV()">Export to CSV</button>
 +          </div>
-+          <input type="text" id="db-search-clients" class="form-control" placeholder="Search Clients..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-clients-list" class="table-container"></div>
-         </div>
- 
-         <div class="card">
--          <h3>Contacts</h3>
--          <div id="db-contacts-list"></div>
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Contacts</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('contacts')">+ Add Contact</button>
++
++          <div class="filters" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
++            <select id="report-type" class="form-control" style="flex: 1; min-width: 200px;">
++              <option value="sales">Sales MIS</option>
++              <option value="personal">Personal MIS</option>
++              <option value="deals">Deal MIS</option>
++              <option value="revenue">Revenue Summary</option>
++              <option value="pending">Pending Payments</option>
++              <option value="datewise">Date-wise Reports</option>
++              <option value="owner">Owner-wise Performance</option>
++              <option value="service">Service-line Performance</option>
++              <option value="followup">Follow-up & Overdue Tasks</option>
++            </select>
++            <input type="date" id="report-start-date" class="form-control" placeholder="Start Date">
++            <input type="date" id="report-end-date" class="form-control" placeholder="End Date">
++            <button class="btn btn-secondary" onclick="window.reportsManager.render()">Generate</button>
 +          </div>
-+          <input type="text" id="db-search-contacts" class="form-control" placeholder="Search Contacts..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-contacts-list" class="table-container"></div>
-         </div>
- 
-         <div class="card">
--          <h3>Trainers</h3>
--          <div id="db-trainers-list"></div>
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Vendors</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('vendors')">+ Add Vendor</button>
-+          </div>
-+          <input type="text" id="db-search-vendors" class="form-control" placeholder="Search Vendors..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-vendors-list" class="table-container"></div>
-         </div>
- 
-         <div class="card">
--          <h3>Vendors</h3>
--          <div id="db-vendors-list"></div>
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Trainers</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('trainers')">+ Add Trainer</button>
-+          </div>
-+          <input type="text" id="db-search-trainers" class="form-control" placeholder="Search Trainers..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-trainers-list" class="table-container"></div>
-         </div>
- 
-         <div class="card">
--          <h3>Service Database</h3>
--          <div id="db-service-list"></div>
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Service Lines / Training Categories</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('serviceLines')">+ Add Service Line</button>
-+          </div>
-+          <input type="text" id="db-search-serviceLines" class="form-control" placeholder="Search Service Lines..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-serviceLines-list" class="table-container"></div>
 +        </div>
 +
-+        <div class="card db-admin-only" id="db-admin-users" style="display: none;">
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Users</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('users')">+ Add User</button>
-+          </div>
-+          <input type="text" id="db-search-users" class="form-control" placeholder="Search Users..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-users-list" class="table-container"></div>
++        <div class="card" id="report-kpis" style="display: flex; gap: 20px; flex-wrap: wrap;">
++          <!-- KPI cards rendered here -->
 +        </div>
 +
-+        <div class="card db-admin-only" id="db-admin-teams" style="display: none;">
-+          <div style="display: flex; justify-content: space-between; align-items: center;">
-+            <h3>Teams</h3>
-+            <button class="btn btn-primary btn-db-add" onclick="window.databaseManager.openModal('teams')">+ Add Team</button>
-+          </div>
-+          <input type="text" id="db-search-teams" class="form-control" placeholder="Search Teams..." style="margin: 10px 0; max-width: 300px;">
-+          <div id="db-teams-list" class="table-container"></div>
++        <div class="card">
++          <h3 id="report-table-title">Report Details</h3>
++          <div id="report-table-container" class="table-container"></div>
          </div>
        </div>
  
-@@ -785,9 +823,32 @@
-   <script src="js/db.js"></script>
-   <script src="js/import.js"></script>
-   <script src="js/auth.js"></script>
--  <script src="js/leads.js"></script>
--  <script src="js/pipeline.js"></script>
-+
-+  <!-- Database Master Modal -->
-+  <div id="modal-database" class="modal-overlay hidden">
-+    <div class="modal" style="max-width: 600px;">
-+      <div class="modal-header">
-+        <h3 id="modal-database-title">Manage Record</h3>
-+        <button class="btn btn-secondary" id="btn-close-database-modal">Close</button>
-+      </div>
-+      <form id="form-database">
-+        <input type="hidden" id="db-collection">
-+        <input type="hidden" id="db-record-id">
-+        <div id="db-dynamic-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-+          <!-- Dynamically generated based on schema -->
-+        </div>
-+        <div style="margin-top: 20px;">
-+          <button type="submit" class="btn btn-primary" style="width: 100%;">Save Record</button>
-+        </div>
-+      </form>
-+    </div>
-+  </div>
-+
-+  <script src="js/database.js"></script>
-+  <script src="js/deals.js"></script>
+@@ -849,6 +880,7 @@
    <script src="js/requirements.js"></script>
-+  <script src="js/pipeline.js"></script>
-+  <script src="js/leads.js"></script>
+   <script src="js/pipeline.js"></script>
+   <script src="js/leads.js"></script>
++  <script src="js/reports.js"></script>
    <script src="js/app.js"></script>
  </body>
  </html>
 diff --git a/js/app.js b/js/app.js
-index f33a8a9..f8db6cd 100644
+index f8db6cd..de486e0 100644
 --- a/js/app.js
 +++ b/js/app.js
-@@ -37,7 +37,7 @@
- 
-       applyRoleRestrictions(user);
-       renderDashboard();
--      renderDatabaseTab();
-+      if (window.databaseManager) window.databaseManager.render();
-       renderAudits();
-       if (window.leadsManager) window.leadsManager.render();
-       if (window.pipelineManager) window.pipelineManager.render();
-@@ -107,6 +107,9 @@
-       if (tabName === 'deals' && window.dealsManager) {
-         window.dealsManager.render();
+@@ -1,4 +1,4 @@
+-∩╗┐document.addEventListener('DOMContentLoaded', () => {
++document.addEventListener('DOMContentLoaded', () => {
+   const loginView = document.getElementById('login-view');
+   const appView = document.getElementById('app-view');
+   const loginForm = document.getElementById('login-form');
+@@ -110,6 +110,9 @@
+       if (tabName === 'database' && window.databaseManager) {
+         window.databaseManager.render();
        }
-+      if (tabName === 'database' && window.databaseManager) {
-+        window.databaseManager.render();
++      if (tabName === 'reports' && window.reportsManager) {
++        window.reportsManager.render();
 +      }
      });
    });
  
-@@ -153,13 +156,7 @@
-     renderTable(dashboardRecords, 'leads', ['first_name', 'last_name', 'email', 'company_name']);
-   }
- 
--  function renderDatabaseTab() {
--    renderTable(document.getElementById('db-clients-list'), 'clients', ['company_name', 'industry', 'gst']);
--    renderTable(document.getElementById('db-contacts-list'), 'contacts', ['first_name', 'last_name', 'email', 'linkedin']);
--    renderTable(document.getElementById('db-trainers-list'), 'trainers', ['first_name', 'last_name', 'expertise']);
--    renderTable(document.getElementById('db-vendors-list'), 'vendors', ['company_name', 'services_provided', 'gst']);
--    renderTable(document.getElementById('db-service-list'), 'requirements', ['title', 'client_id', 'status']);
--  }
-+
- 
-   function renderAudits() {
-     const user = auth.getCurrentUser();
-@@ -235,7 +232,7 @@
- 
-     // Refresh UI
-     renderDashboard();
--    renderDatabaseTab();
-+    if (window.databaseManager) window.databaseManager.render();
-     renderAudits();
-   });
- 
-diff --git a/js/database.js b/js/database.js
+diff --git a/js/reports.js b/js/reports.js
 new file mode 100644
-index 0000000..4663220
+index 0000000..990c213
 --- /dev/null
-+++ b/js/database.js
-@@ -0,0 +1,322 @@
-+class DatabaseManager {
++++ b/js/reports.js
+@@ -0,0 +1,401 @@
++class ReportsManager {
 +  constructor() {
-+    this.searchFilters = {
-+      clients: '',
-+      contacts: '',
-+      vendors: '',
-+      trainers: '',
-+      users: '',
-+      teams: '',
-+      serviceLines: ''
-+    };
-+
 +    this.bindEvents();
-+    // Do not call this.render() here, it will be called by app.js when the tab is clicked.
 +  }
 +
 +  bindEvents() {
-+    const el = (id) => document.getElementById(id);
-+
-+    const bindSearch = (coll) => {
-+      const input = el(`db-search-${coll}`);
-+      if (input) {
-+        input.addEventListener('input', (e) => {
-+          this.searchFilters[coll] = e.target.value.toLowerCase();
-+          this.renderCollection(coll);
-+        });
-+      }
-+    };
-+
-+    ['clients', 'contacts', 'vendors', 'trainers', 'users', 'teams', 'serviceLines'].forEach(bindSearch);
-+
-+    const closeModalBtn = el('btn-close-database-modal');
-+    if (closeModalBtn) {
-+      closeModalBtn.addEventListener('click', () => {
-+        el('modal-database').classList.add('hidden');
-+      });
++    const reportType = document.getElementById('report-type');
++    if (reportType) {
++      reportType.addEventListener('change', () => this.render());
 +    }
-+
-+    const dbForm = el('form-database');
-+    if (dbForm) {
-+      dbForm.addEventListener('submit', (e) => {
-+        e.preventDefault();
-+        this.saveRecord();
-+      });
-+    }
-+  }
-+
-+  render() {
-+    const user = auth.getCurrentUser();
-+
-+    // Hide/Show Admin sections based on role
-+    const el = (id) => document.getElementById(id);
-+    if (user.role === 'manager') {
-+      if (el('db-admin-users')) el('db-admin-users').style.display = 'block';
-+      if (el('db-admin-teams')) el('db-admin-teams').style.display = 'block';
-+    } else {
-+      if (el('db-admin-users')) el('db-admin-users').style.display = 'none';
-+      if (el('db-admin-teams')) el('db-admin-teams').style.display = 'none';
-+    }
-+
-+    // Hide Add buttons for employees
-+    const addBtns = document.querySelectorAll('.btn-db-add');
-+    addBtns.forEach(btn => {
-+      btn.style.display = user.role === 'employee' ? 'none' : 'block';
-+    });
-+
-+    ['clients', 'contacts', 'vendors', 'trainers', 'serviceLines'].forEach(coll => this.renderCollection(coll));
-+    if (user.role === 'manager') {
-+      ['users', 'teams'].forEach(coll => this.renderCollection(coll));
-+    }
-+  }
-+
-+  getLinkedCounts(collection, id, allRecords) {
-+    let counts = [];
-+    if (collection === 'clients') {
-+      const contacts = allRecords.contacts.filter(r => r.client_id === id).length;
-+      const reqs = allRecords.requirements.filter(r => r.client_id === id).length;
-+      const deals = allRecords.deals.filter(r => r.client_id === id).length;
-+      if (contacts) counts.push(`${contacts} Contacts`);
-+      if (reqs) counts.push(`${reqs} Reqs`);
-+      if (deals) counts.push(`${deals} Deals`);
-+    } else if (collection === 'contacts') {
-+      const reqs = allRecords.requirements.filter(r => r.contact_id === id).length;
-+      const deals = allRecords.deals.filter(r => r.contact_id === id).length;
-+      if (reqs) counts.push(`${reqs} Reqs`);
-+      if (deals) counts.push(`${deals} Deals`);
-+    } else if (collection === 'trainers') {
-+      const deals = allRecords.deals.filter(r => r.selected_trainer_id === id).length;
-+      if (deals) counts.push(`${deals} Deals`);
-+    } else if (collection === 'vendors') {
-+      const deals = allRecords.deals.filter(r => r.selected_vendor_id === id).length;
-+      if (deals) counts.push(`${deals} Deals`);
-+    }
-+    return counts.length > 0 ? counts.join(', ') : 'None';
-+  }
-+
-+  renderCollection(collection) {
-+    const user = auth.getCurrentUser();
-+    const records = db.getRecords(collection, user);
-+    const container = document.getElementById(`db-${collection}-list`);
-+    if (!container) return;
-+
-+    const searchTerm = this.searchFilters[collection];
-+    const filtered = records.filter(r => {
-+      if (!searchTerm) return true;
-+      return Object.values(r).some(v => String(v).toLowerCase().includes(searchTerm));
-+    });
-+
-+    // Load all records once for link counting
-+    const allRecords = {
-+      contacts: db.getRecords('contacts', user),
-+      requirements: db.getRecords('requirements', user),
-+      deals: db.getRecords('deals', user)
-+    };
-+
-+    const schema = window.crmSchema[collection];
-+    if (!schema) return;
-+
-+    // Display first 4 fields
-+    const displayFields = schema.fields.slice(0, 4);
-+
-+    let html = `<table class="data-table"><thead><tr>`;
-+    displayFields.forEach(f => {
-+      html += `<th>${this.formatFieldName(f)}</th>`;
-+    });
-+    html += `<th>Linked Data</th>`;
-+    if (user.role !== 'employee') {
-+      html += `<th>Actions</th>`;
-+    }
-+    html += `</tr></thead><tbody>`;
-+
-+    if (filtered.length === 0) {
-+      html += `<tr><td colspan="${displayFields.length + 2}">No records found.</td></tr>`;
-+    } else {
-+      filtered.forEach(record => {
-+        html += `<tr>`;
-+        displayFields.forEach(f => {
-+          html += `<td>${this.escapeHTML(record[f])}</td>`;
-+        });
-+        html += `<td><span style="font-size: 0.85em; color: #666;">${this.escapeHTML(this.getLinkedCounts(collection, record.id, allRecords))}</span></td>`;
-+
-+        if (user.role !== 'employee') {
-+          html += `
-+            <td>
-+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="window.databaseManager.openModal('${collection}', '${record.id}')">Edit</button>
-+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background-color: #fee;" onclick="window.databaseManager.deleteRecord('${collection}', '${record.id}')">Del</button>
-+            </td>
-+          `;
-+        }
-+        html += `</tr>`;
-+      });
-+    }
-+    html += `</tbody></table>`;
-+    container.innerHTML = html;
 +  }
 +
 +  escapeHTML(str) {
-+    if (!str) return '-';
++    if (str === null || str === undefined || str === '') return '-';
 +    return String(str)
 +      .replace(/&/g, "&amp;")
 +      .replace(/</g, "&lt;")
@@ -388,261 +138,390 @@ index 0000000..4663220
 +      .replace(/'/g, "&#039;");
 +  }
 +
-+  formatFieldName(field) {
-+    return field.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
++  formatDate(value) {
++    if (!value) return '-';
++    const d = new Date(value);
++    if (isNaN(d)) return '-';
++    return d.toLocaleDateString();
 +  }
 +
-+  openModal(collection, recordId = null) {
-+    const user = auth.getCurrentUser();
-+    if (user.role === 'employee') return;
-+    const schema = window.crmSchema[collection];
-+    if (!schema) return;
-+
-+    document.getElementById('db-collection').value = collection;
-+    document.getElementById('db-record-id').value = recordId || '';
-+
-+    const titleObj = collection.charAt(0).toUpperCase() + collection.slice(1);
-+    document.getElementById('modal-database-title').textContent = recordId ? `Edit ${titleObj}` : `Add ${titleObj}`;
-+
-+    const fieldsContainer = document.getElementById('db-dynamic-fields');
-+    fieldsContainer.innerHTML = '';
-+
-+    let record = null;
-+    if (recordId) {
-+      const records = db.getRecords(collection, user);
-+      record = records.find(r => r.id === recordId);
++  isWithinDateRange(dateStr, start, end) {
++    if (!dateStr) return false;
++    const d = new Date(dateStr);
++    if (isNaN(d)) return false;
++    
++    if (start) {
++      const s = new Date(start);
++      s.setHours(0,0,0,0);
++      if (d < s) return false;
 +    }
-+
-+    schema.fields.forEach(field => {
-+      const wrapper = document.createElement('div');
-+      wrapper.className = 'form-group';
-+
-+      const label = document.createElement('label');
-+      label.textContent = this.formatFieldName(field);
-+
-+      const input = document.createElement('input');
-+      input.type = 'text';
-+      input.id = `db-f-${field}`;
-+      input.className = 'form-control';
-+      if (record && record[field]) {
-+        input.value = record[field];
-+      }
-+
-+      wrapper.appendChild(label);
-+      wrapper.appendChild(input);
-+      fieldsContainer.appendChild(wrapper);
-+    });
-+
-+    document.getElementById('modal-database').classList.remove('hidden');
-+  }
-+
-+  normalizeValue(value) {
-+    if (!value) return '';
-+    return String(value).trim().toLowerCase().replace(/[\s\+\-\(\)\[\]]/g, '');
-+  }
-+
-+  saveRecord() {
-+    const user = auth.getCurrentUser();
-+    if (user.role === 'employee') return;
-+    const collection = document.getElementById('db-collection').value;
-+    const recordId = document.getElementById('db-record-id').value;
-+    const schema = window.crmSchema[collection];
-+
-+    if (!schema) return;
-+
-+    let data = {};
-+    schema.fields.forEach(field => {
-+      data[field] = document.getElementById(`db-f-${field}`).value.trim();
-+    });
-+
-+    const globalRecords = db.getRecords(collection, {role: 'manager'}); // full list for dup detection
-+    const accessibleRecords = db.getRecords(collection, user); // scope for merging
-+    const duplicateKeys = schema.duplicateKeys || [];
-+
-+    // Check Duplicates
-+    let duplicateRecord = null;
-+    if (duplicateKeys.length > 0) {
-+      for (let r of globalRecords) {
-+        if (recordId && r.id === recordId) continue; // Skip self
-+
-+        let isDup = false;
-+        for (let key of duplicateKeys) {
-+          if (data[key] && r[key]) {
-+            if (this.normalizeValue(data[key]) === this.normalizeValue(r[key])) {
-+              isDup = true;
-+              break;
-+            }
-+          }
-+        }
-+        if (isDup) {
-+          duplicateRecord = r;
-+          break;
-+        }
-+      }
++    if (end) {
++      const e = new Date(end);
++      e.setHours(23,59,59,999);
++      if (d > e) return false;
 +    }
++    return true;
++  }
 +
-+    if (duplicateRecord) {
-+      const isAccessible = accessibleRecords.some(r => r.id === duplicateRecord.id);
-+      
-+      if (!isAccessible) {
-+        alert("Duplicate exists outside your access scope. Please ask a Manager to review.");
-+        return;
-+      }
++  formatCurrency(val) {
++    const num = parseFloat(val);
++    if (isNaN(num)) return '-';
++    return '$' + num.toLocaleString();
++  }
 +
-+      const confirmMerge = confirm(`Duplicate detected for this record (Matched existing record ID: ${duplicateRecord.id}).\n\nDo you want to merge these details? This will only fill empty fields on the existing record and keep the original ID.`);
-+      if (!confirmMerge) {
-+        return; // Abort
-+      }
++  render() {
++    const type = document.getElementById('report-type').value;
++    const startDate = document.getElementById('report-start-date').value;
++    const endDate = document.getElementById('report-end-date').value;
++    const user = auth.getCurrentUser();
 +
-+      // Merge Logic: only fill empty fields
-+      let mergedData = { ...duplicateRecord };
-+      let changesMade = false;
++    if (type === 'sales') this.generateSalesMIS(startDate, endDate, user);
++    else if (type === 'personal') this.generatePersonalMIS(startDate, endDate, user);
++    else if (type === 'deals') this.generateDealMIS(startDate, endDate, user);
++    else if (type === 'revenue') this.generateRevenueSummary(startDate, endDate, user);
++    else if (type === 'pending') this.generatePendingPayments(startDate, endDate, user);
++    else if (type === 'datewise') this.generateDatewiseReports(startDate, endDate, user);
++    else if (type === 'owner') this.generateOwnerwisePerformance(startDate, endDate, user);
++    else if (type === 'service') this.generateServiceLinePerformance(startDate, endDate, user);
++    else if (type === 'followup') this.generateFollowupOverdue(startDate, endDate, user);
++  }
 +
-+      schema.fields.forEach(field => {
-+        if (!mergedData[field] && data[field]) {
-+          mergedData[field] = data[field];
-+          changesMade = true;
-+        }
-+      });
++  renderKPIs(kpis) {
++    const container = document.getElementById('report-kpis');
++    container.innerHTML = '';
++    kpis.forEach(kpi => {
++      container.innerHTML += `
++        <div style="flex: 1; min-width: 150px; background: var(--surface-card); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--hairline);">
++          <div style="font-size: 0.9em; color: var(--muted);">${this.escapeHTML(kpi.label)}</div>
++          <div style="font-size: 1.5em; font-weight: bold; color: var(--primary);">${this.escapeHTML(kpi.value)}</div>
++        </div>
++      `;
++    });
++  }
 +
-+      if (changesMade) {
-+        db.updateRecord(collection, duplicateRecord.id, mergedData, user);
-+        db.logAudit('duplicate_merge', `Merged data into existing ${collection} ${duplicateRecord.id}`, user, duplicateRecord.team_id);
-+        db.logActivity('update', `Merged duplicate data`, collection, duplicateRecord.id, user);
-+      }
-+
-+      document.getElementById('modal-database').classList.add('hidden');
-+      this.renderCollection(collection);
++  renderTable(headers, rows) {
++    const container = document.getElementById('report-table-container');
++    if (rows.length === 0) {
++      container.innerHTML = '<p>No data found for the selected criteria.</p>';
 +      return;
 +    }
 +
-+    // Normal Save
-+    if (recordId) {
-+      db.updateRecord(collection, recordId, data, user);
-+    } else {
-+      db.createRecord(collection, data, user);
-+    }
++    let html = '<table class="data-table"><thead><tr>';
++    headers.forEach(h => html += `<th>${this.escapeHTML(h)}</th>`);
++    html += '</tr></thead><tbody>';
 +
-+    document.getElementById('modal-database').classList.add('hidden');
-+    this.renderCollection(collection);
++    rows.forEach(row => {
++      html += '<tr>';
++      row.forEach(cell => html += `<td>${this.escapeHTML(cell)}</td>`);
++      html += '</tr>';
++    });
++    
++    html += '</tbody></table>';
++    container.innerHTML = html;
 +  }
 +
-+  deleteRecord(collection, id) {
-+    const user = auth.getCurrentUser();
-+    if (user.role === 'employee') return;
-+    if (!confirm('Are you sure you want to delete this record?')) return;
++  // 1. Sales MIS
++  generateSalesMIS(start, end, user) {
++    let leads = db.getRecords('leads', user);
++    let reqs = db.getRecords('requirements', user);
 +
-+    try {
-+      db.deleteRecord(collection, id, user);
-+      this.renderCollection(collection);
-+    } catch (e) {
-+      alert(e.message);
++    if (start || end) {
++      leads = leads.filter(r => this.isWithinDateRange(r.created_at, start, end));
++      reqs = reqs.filter(r => this.isWithinDateRange(r.created_at, start, end));
 +    }
++
++    this.renderKPIs([
++      { label: 'Total Leads', value: leads.length },
++      { label: 'Converted Leads', value: leads.filter(l => l.pipeline_stage === 'Converted').length },
++      { label: 'Total Requirements', value: reqs.length },
++      { label: 'Live Reqs (Sourcing)', value: reqs.filter(r => r.pipeline_stage === 'Sourcing').length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Leads & Requirements Overview';
++    
++    const headers = ['Entity Type', 'Name / Title', 'Client / Company', 'Stage', 'Priority', 'Created At'];
++    const rows = [];
++    
++    leads.forEach(l => {
++      rows.push(['Lead', `${l.first_name} ${l.last_name}`, l.company_name, l.pipeline_stage, l.priority, this.formatDate(l.created_at)]);
++    });
++    reqs.forEach(r => {
++      rows.push(['Requirement', r.title, r.company_name, r.pipeline_stage, r.priority, this.formatDate(r.created_at)]);
++    });
++
++    this.renderTable(headers, rows);
++  }
++
++  // 2. Personal MIS
++  generatePersonalMIS(start, end, user) {
++    const allLeads = db.getRecords('leads', user).filter(r => r.owner_id === user.id);
++    const allDeals = db.getRecords('deals', user).filter(r => r.owner_id === user.id);
++    const allTasks = db.getRecords('tasks', user).filter(r => r.owner_id === user.id || r.assigned_to === user.id);
++
++    let leads = allLeads;
++    let deals = allDeals;
++    let tasks = allTasks;
++
++    if (start || end) {
++      leads = leads.filter(r => this.isWithinDateRange(r.created_at, start, end));
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++      tasks = tasks.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    this.renderKPIs([
++      { label: 'My Leads', value: leads.length },
++      { label: 'My Deals', value: deals.length },
++      { label: 'Pending Tasks', value: tasks.filter(t => t.status !== 'Completed').length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'My Active Pipeline';
++    const headers = ['Type', 'Title', 'Status/Stage', 'Value/Priority', 'Due/Created Date'];
++    const rows = [];
++
++    leads.forEach(l => rows.push(['Lead', l.company_name, l.pipeline_stage, l.priority, this.formatDate(l.created_at)]));
++    deals.forEach(d => rows.push(['Deal', d.title, d.status, this.formatCurrency(d.amount), this.formatDate(d.created_at)]));
++    tasks.filter(t => t.status !== 'Completed').forEach(t => rows.push(['Task', t.title, t.status, t.priority, this.formatDate(t.due_date)]));
++
++    this.renderTable(headers, rows);
++  }
++
++  // 3. Deal MIS
++  generateDealMIS(start, end, user) {
++    let deals = db.getRecords('deals', user);
++    if (start || end) {
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    this.renderKPIs([
++      { label: 'Total Deals', value: deals.length },
++      { label: 'Live Deals', value: deals.filter(d => d.status === 'Live').length },
++      { label: 'Confirmed Deals', value: deals.filter(d => d.status === 'Confirmed').length },
++      { label: 'Completed Deals', value: deals.filter(d => d.status === 'Completed').length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Deals Detail';
++    const headers = ['Deal Title', 'Project Name', 'Client ID', 'Amount', 'Status', 'Start Date', 'End Date'];
++    const rows = deals.map(d => [
++      d.title, d.project_name, d.client_id, this.formatCurrency(d.amount), d.status, d.start_date, d.end_date
++    ]);
++
++    this.renderTable(headers, rows);
++  }
++
++  // 4. Revenue Summary
++  generateRevenueSummary(start, end, user) {
++    let deals = db.getRecords('deals', user).filter(d => d.status === 'Confirmed' || d.status === 'Live' || d.status === 'Completed' || d.status === 'Closed');
++    if (start || end) {
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    const totalRev = deals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
++
++    this.renderKPIs([
++      { label: 'Total Won Revenue', value: this.formatCurrency(totalRev) },
++      { label: 'Deals Count', value: deals.length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Revenue Breakdown (Won Deals)';
++    const headers = ['Deal Title', 'Service Type', 'Amount', 'Status', 'Owner'];
++    const rows = deals.map(d => [
++      d.title, d.service_type, this.formatCurrency(d.amount), d.status, d.owner_id
++    ]);
++
++    this.renderTable(headers, rows);
++  }
++
++  // 5. Pending Payments
++  generatePendingPayments(start, end, user) {
++    let deals = db.getRecords('deals', user).filter(d => d.payment_status && d.payment_status.toLowerCase() !== 'paid');
++    let invoices = db.getRecords('invoices', user).filter(i => i.status && i.status.toLowerCase() !== 'paid');
++
++    if (start || end) {
++      deals = deals.filter(r => this.isWithinDateRange(r.payment_followup_date, start, end));
++      invoices = invoices.filter(r => this.isWithinDateRange(r.due_date, start, end));
++    }
++
++    this.renderKPIs([
++      { label: 'Deals Pending Payment', value: deals.length },
++      { label: 'Unpaid Invoices', value: invoices.length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Overdue / Pending Collections';
++    const headers = ['Entity', 'Reference', 'Amount', 'Status', 'Due / Follow-up Date'];
++    const rows = [];
++
++    deals.forEach(d => rows.push(['Deal Payment', d.title, this.formatCurrency(d.invoice_amount || d.amount), d.payment_status, d.payment_followup_date || '-']));
++    invoices.forEach(i => rows.push(['Invoice', i.invoice_number, this.formatCurrency(i.amount), i.status, i.due_date || '-']));
++
++    this.renderTable(headers, rows);
++  }
++
++  // 6. Date-wise Reports
++  generateDatewiseReports(start, end, user) {
++    let leads = db.getRecords('leads', user);
++    let deals = db.getRecords('deals', user);
++
++    if (start || end) {
++      leads = leads.filter(r => this.isWithinDateRange(r.created_at, start, end));
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    this.renderKPIs([
++      { label: 'New Leads', value: leads.length },
++      { label: 'New Deals', value: deals.length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Records Created in Date Range';
++    const headers = ['Date Created', 'Type', 'Title / Name', 'Owner', 'Stage / Status'];
++    const rows = [];
++
++    leads.forEach(l => rows.push([this.formatDate(l.created_at), 'Lead', l.company_name, l.owner_id, l.pipeline_stage]));
++    deals.forEach(d => rows.push([this.formatDate(d.created_at), 'Deal', d.title, d.owner_id, d.status]));
++    
++    // Sort by date
++    rows.sort((a, b) => new Date(b[0]) - new Date(a[0]));
++
++    this.renderTable(headers, rows);
++  }
++
++  // 7. Owner-wise Performance
++  generateOwnerwisePerformance(start, end, user) {
++    let deals = db.getRecords('deals', user);
++    if (start || end) {
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    const perf = {};
++    deals.forEach(d => {
++      const owner = d.owner_id || 'Unassigned';
++      if (!perf[owner]) perf[owner] = { count: 0, revenue: 0, won: 0 };
++      perf[owner].count++;
++      if (['Confirmed', 'Live', 'Completed', 'Closed'].includes(d.status)) {
++        perf[owner].won++;
++        perf[owner].revenue += (parseFloat(d.amount) || 0);
++      }
++    });
++
++    this.renderKPIs([
++      { label: 'Total Owners Tracked', value: Object.keys(perf).length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Performance by Owner';
++    const headers = ['Owner ID', 'Total Deals', 'Won Deals', 'Won Revenue'];
++    const rows = Object.keys(perf).map(owner => [
++      owner, perf[owner].count, perf[owner].won, this.formatCurrency(perf[owner].revenue)
++    ]);
++
++    this.renderTable(headers, rows);
++  }
++
++  // 8. Service-line Performance
++  generateServiceLinePerformance(start, end, user) {
++    let deals = db.getRecords('deals', user);
++    if (start || end) {
++      deals = deals.filter(r => this.isWithinDateRange(r.created_at, start, end));
++    }
++
++    const perf = {};
++    deals.forEach(d => {
++      const service = d.service_type || d.service_interest || 'Uncategorized';
++      if (!perf[service]) perf[service] = { count: 0, revenue: 0 };
++      perf[service].count++;
++      if (['Confirmed', 'Live', 'Completed', 'Closed'].includes(d.status)) {
++        perf[service].revenue += (parseFloat(d.amount) || 0);
++      }
++    });
++
++    this.renderKPIs([
++      { label: 'Service Lines Tracked', value: Object.keys(perf).length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Performance by Service Line';
++    const headers = ['Service Line', 'Total Deals', 'Won Revenue'];
++    const rows = Object.keys(perf).map(service => [
++      service, perf[service].count, this.formatCurrency(perf[service].revenue)
++    ]);
++
++    this.renderTable(headers, rows);
++  }
++
++  // 9. Follow-up & Overdue Tasks
++  generateFollowupOverdue(start, end, user) {
++    const todayStr = new Date().toISOString().split('T')[0];
++    
++    let tasks = db.getRecords('tasks', user).filter(t => t.status !== 'Completed');
++    let leads = db.getRecords('leads', user).filter(l => l.next_follow_up_date);
++    let deals = db.getRecords('deals', user).filter(d => d.payment_followup_date);
++
++    if (start || end) {
++      tasks = tasks.filter(r => this.isWithinDateRange(r.due_date, start, end));
++      leads = leads.filter(r => this.isWithinDateRange(r.next_follow_up_date, start, end));
++      deals = deals.filter(r => this.isWithinDateRange(r.payment_followup_date, start, end));
++    }
++
++    const overdueTasks = tasks.filter(t => t.due_date && t.due_date < todayStr).length;
++
++    this.renderKPIs([
++      { label: 'Pending Tasks', value: tasks.length },
++      { label: 'Overdue Tasks', value: overdueTasks },
++      { label: 'Lead Follow-ups', value: leads.length }
++    ]);
++
++    document.getElementById('report-table-title').innerText = 'Follow-ups and Tasks';
++    const headers = ['Type', 'Title / Contact', 'Due Date', 'Status', 'Owner'];
++    const rows = [];
++
++    tasks.forEach(t => rows.push(['Task', t.title, t.due_date, t.status, t.assigned_to]));
++    leads.forEach(l => rows.push(['Lead Follow-up', l.company_name, l.next_follow_up_date, l.pipeline_stage, l.owner_id]));
++    deals.forEach(d => rows.push(['Payment Follow-up', d.title, d.payment_followup_date, d.payment_status, d.owner_id]));
++
++    // Sort by due date ascending
++    rows.sort((a, b) => new Date(a[2] || '2099-01-01') - new Date(b[2] || '2099-01-01'));
++
++    this.renderTable(headers, rows);
++  }
++
++  exportCSV() {
++    const table = document.querySelector('#report-table-container table');
++    if (!table) {
++      alert("No data available to export.");
++      return;
++    }
++
++    let csvContent = "";
++    const rows = table.querySelectorAll('tr');
++    
++    rows.forEach(row => {
++      const cols = row.querySelectorAll('th, td');
++      const rowData = [];
++      cols.forEach(col => {
++        let text = col.innerText.replace(/"/g, '""');
++        rowData.push(`"${text}"`);
++      });
++      csvContent += rowData.join(",") + "\n";
++    });
++
++    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
++    const url = URL.createObjectURL(blob);
++    const link = document.createElement("a");
++    link.setAttribute("href", url);
++    const dateStr = new Date().toISOString().split('T')[0];
++    link.setAttribute("download", `CRM_Report_${dateStr}.csv`);
++    document.body.appendChild(link);
++    link.click();
++    document.body.removeChild(link);
++    URL.revokeObjectURL(url);
 +  }
 +}
 +
 +document.addEventListener('DOMContentLoaded', () => {
-+  window.databaseManager = new DatabaseManager();
++  window.reportsManager = new ReportsManager();
 +});
-diff --git a/js/db.js b/js/db.js
-index d84b7e2..1bf188b 100644
---- a/js/db.js
-+++ b/js/db.js
-@@ -1,4 +1,4 @@
--∩╗┐class Database {
-+class Database {
-   constructor() {
-     this.seedData();
-   }
-@@ -157,17 +157,67 @@
-     if (!record) return;
- 
-     if (!this.canAccessRecord(user, record)) {
-+      this.logAudit('delete_attempt', `Failed delete attempt on ${collection} ${id} (Unauthorized)`, user, record.team_id);
-       throw new Error("Unauthorized to delete this record");
-     }
- 
-+    // Safe Delete Checks
-+    let links = [];
-+    const checkLinks = (targetColl, key, matchVal) => {
-+      const recs = JSON.parse(localStorage.getItem(`crm_${targetColl}`) || '[]');
-+      const count = recs.filter(r => r[key] === matchVal).length;
-+      if (count > 0) links.push(`${count} in ${targetColl}`);
-+    };
-+
-+    if (collection === 'clients') {
-+      checkLinks('contacts', 'client_id', id);
-+      checkLinks('requirements', 'client_id', id);
-+      checkLinks('deals', 'client_id', id);
-+      checkLinks('invoices', 'client_id', id);
-+    } else if (collection === 'contacts') {
-+      checkLinks('requirements', 'contact_id', id);
-+      checkLinks('deals', 'contact_id', id);
-+    } else if (collection === 'vendors') {
-+      checkLinks('sourcingCandidates', 'linked_vendor_id', id);
-+      checkLinks('deals', 'selected_vendor_id', id);
-+      checkLinks('purchaseOrders', 'vendor_id', id);
-+    } else if (collection === 'trainers') {
-+      checkLinks('sourcingCandidates', 'linked_trainer_id', id);
-+      checkLinks('deals', 'selected_trainer_id', id);
-+    } else if (collection === 'users') {
-+      checkLinks('leads', 'owner_id', id);
-+      checkLinks('requirements', 'owner_id', id);
-+      checkLinks('deals', 'owner_id', id);
-+      checkLinks('tasks', 'owner_id', id);
-+      checkLinks('tasks', 'assigned_to', id);
-+      checkLinks('teams', 'manager_id', id);
-+    } else if (collection === 'teams') {
-+      checkLinks('users', 'team_id', id);
-+    } else if (collection === 'serviceLines') {
-+      // service lines match on 'name', not 'id' usually if we just use the text field in schema, but we will check string match just in case.
-+      const sname = record.name;
-+      if (sname) {
-+        checkLinks('leads', 'service_interest', sname);
-+        checkLinks('requirements', 'service_interest', sname);
-+        checkLinks('deals', 'service_type', sname);
-+        checkLinks('deals', 'service_interest', sname);
-+      }
-+    }
-+
-+    if (links.length > 0) {
-+      this.logAudit('delete_attempt', `Blocked delete on ${collection} ${id} (Linked to ${links.join(', ')})`, user, record.team_id);
-+      throw new Error(`Cannot delete ${collection} record. It is linked to: ${links.join(', ')}.`);
-+    }
-+
-     records = records.filter(r => r.id !== id);
-     localStorage.setItem(`crm_${collection}`, JSON.stringify(records));
- 
-     this.logAudit('delete', `Deleted ${collection} record ${id}`, user, record.team_id);
-+    this.logActivity('delete', `Deleted ${collection}`, collection, id, user);
-   }
- 
-   logAudit(action, details, user, team_id = 'none') {
--    const allowedActions = ['login', 'logout', 'create', 'update', 'delete', 'assign', 'approve', 'import', 'export', 'stage_change', 'profile_shared', 'candidate_selected', 'proposal_update', 'po_update', 'convert_to_deal', 'deal_update', 'trainer_assigned', 'vendor_assigned', 'delivery_update', 'invoice_update', 'payment_update', 'feedback_update', 'close_deal'];
-+    const allowedActions = ['login', 'logout', 'create', 'update', 'delete', 'assign', 'approve', 'import', 'export', 'stage_change', 'profile_shared', 'candidate_selected', 'proposal_update', 'po_update', 'convert_to_deal', 'deal_update', 'trainer_assigned', 'vendor_assigned', 'delivery_update', 'invoice_update', 'payment_update', 'feedback_update', 'close_deal', 'delete_attempt', 'duplicate_merge'];
-     if (!allowedActions.includes(action)) return;
- 
-     const audits = JSON.parse(localStorage.getItem('crm_auditLogs') || '[]');
-diff --git a/js/schema.js b/js/schema.js
-index 698fe8d..b5e3119 100644
---- a/js/schema.js
-+++ b/js/schema.js
-@@ -7,6 +7,10 @@
-     fields: ['name', 'description', 'manager_id'],
-     duplicateKeys: ['name']
-   },
-+  serviceLines: {
-+    fields: ['name', 'description', 'status'],
-+    duplicateKeys: ['name']
-+  },
-   leads: {
-     fields: [
-       'company_name', 'contact_person', 'designation', 'email', 'phone',
 ```
 
 ## Tests Run
 ```text
-git diff --check; node --check js/database.js; node --check js/app.js; node --check js/db.js; node --check js/schema.js; node --check js/import.js; node --check js/deals.js; BOM check clean
+git diff --check; node --check js/reports.js; node --check js/app.js; node --check js/db.js; node --check js/schema.js; node --check js/database.js; node --check js/deals.js
 ```
 
 ## Risks / Pending Checks

@@ -425,8 +425,39 @@
 
       <div id="tab-reports" class="tab-pane">
         <div class="card">
-          <h3>Reports / MIS</h3>
-          <p>Analytics based on your role access.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3>Reports / MIS</h3>
+              <p>Analytics based on your role access.</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.reportsManager.exportCSV()">Export to CSV</button>
+          </div>
+
+          <div class="filters" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+            <select id="report-type" class="form-control" style="flex: 1; min-width: 200px;">
+              <option value="sales">Sales MIS</option>
+              <option value="personal">Personal MIS</option>
+              <option value="deals">Deal MIS</option>
+              <option value="revenue">Revenue Summary</option>
+              <option value="pending">Pending Payments</option>
+              <option value="datewise">Date-wise Reports</option>
+              <option value="owner">Owner-wise Performance</option>
+              <option value="service">Service-line Performance</option>
+              <option value="followup">Follow-up & Overdue Tasks</option>
+            </select>
+            <input type="date" id="report-start-date" class="form-control" placeholder="Start Date">
+            <input type="date" id="report-end-date" class="form-control" placeholder="End Date">
+            <button class="btn btn-secondary" onclick="window.reportsManager.render()">Generate</button>
+          </div>
+        </div>
+
+        <div class="card" id="report-kpis" style="display: flex; gap: 20px; flex-wrap: wrap;">
+          <!-- KPI cards rendered here -->
+        </div>
+
+        <div class="card">
+          <h3 id="report-table-title">Report Details</h3>
+          <div id="report-table-container" class="table-container"></div>
         </div>
       </div>
 
@@ -849,6 +880,7 @@
   <script src="js/requirements.js"></script>
   <script src="js/pipeline.js"></script>
   <script src="js/leads.js"></script>
+  <script src="js/reports.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

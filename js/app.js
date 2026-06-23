@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
   const loginView = document.getElementById('login-view');
   const appView = document.getElementById('app-view');
   const loginForm = document.getElementById('login-form');
@@ -109,6 +109,9 @@
       }
       if (tabName === 'database' && window.databaseManager) {
         window.databaseManager.render();
+      }
+      if (tabName === 'reports' && window.reportsManager) {
+        window.reportsManager.render();
       }
     });
   });
