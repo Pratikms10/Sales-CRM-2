@@ -1,4 +1,4 @@
-﻿window.crmSchema = {
+window.crmSchema = {
   users: {
     fields: ['first_name', 'last_name', 'email', 'role', 'team_id', 'status'],
     duplicateKeys: ['email']
@@ -17,7 +17,8 @@
       'linkedin', 'website', 'industry', 'company_size', 'city', 'country',
       'service_interest', 'source', 'last_contact_date', 'next_follow_up_date',
       'follow_up_type', 'last_discussion', 'remarks', 'priority',
-      'pipeline_stage', 'converted_requirement_id'
+      'pipeline_stage', 'converted_requirement_id', 'converted_client_id',
+      'visiting_card_ref', 'requirement_note_ref', 'email_screenshot_ref', 'reference_document_ref'
     ],
     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
   },
