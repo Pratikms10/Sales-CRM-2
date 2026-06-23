@@ -113,6 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tabName === 'reports' && window.reportsManager) {
         window.reportsManager.render();
       }
+      if (tabName === 'settings' && window.settingsManager) {
+        window.settingsManager.render();
+      }
     });
   });
 
@@ -187,14 +190,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Import Logic
+  function escapeHTML(str) {
+    if (str === null || str === undefined || str === '') return '-';
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   previewImportBtn.addEventListener('click', () => {
+    const user = auth.getCurrentUser();
+    if (user.role === 'employee') {
+      alert('Access denied');
+      return;
+    }
+
     const file = importFile.files[0];
     if (!file) {
       alert("Please select a file.");
       return;
     }
 
-    const user = auth.getCurrentUser();
     const collection = importCollection.value;
     const fileType = file.name.endsWith('.json') ? 'json' : 'csv';
 
@@ -215,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultHtml += `<p style="color: var(--error);"><strong>Duplicates / Invalid rows:</strong> ${results.invalid.length}</p>`;
         resultHtml += `<ul>`;
         results.invalid.forEach(inv => {
-          resultHtml += `<li>Row ${inv.rowNumber}: ${inv.reason}</li>`;
+          resultHtml += `<li>Row ${escapeHTML(inv.rowNumber)}: ${escapeHTML(inv.reason)}</li>`;
         });
         resultHtml += `</ul>`;
       }
@@ -228,6 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   commitImportBtn.addEventListener('click', () => {
     const user = auth.getCurrentUser();
+    if (user.role === 'employee') {
+      alert('Access denied');
+      return;
+    }
     const count = importManager.commitImport(user);
     alert(`Successfully imported ${count} records.`);
     importPreviewSection.style.display = 'none';
