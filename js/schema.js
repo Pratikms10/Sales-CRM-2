@@ -33,12 +33,15 @@ window.crmSchema = {
   requirements: {
     fields: [
       'title', 'description', 'client_id', 'contact_id', 'lead_id', 'company_name', 'contact_person',
+      'designation', 'phone', 'email',
       'budget', 'priority', 'status', 'pipeline_stage', 'converted_deal_id',
       'service_interest', 'technology', 'audience', 'duration', 'mode', 'location',
       'preferred_dates', 'trainer_type', 'lab_needs', 'recording_needs',
       'proposal_status', 'po_status', 'proposal_number', 'proposal_date',
       'proposal_amount', 'proposal_version', 'approval_status', 'po_number',
-      'po_amount', 'po_received_date', 'po_attachment', 'commercial_remarks', 'owner_id'
+      'po_amount', 'po_received_date', 'po_attachment', 'commercial_remarks', 'owner_id',
+      'requirement_document_ref', 'email_ref', 'proposal_attachment_ref',
+      'confirmation_type', 'confirmation_date', 'confirmation_remarks'
     ],
     duplicateKeys: []
   },
