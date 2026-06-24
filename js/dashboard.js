@@ -7,6 +7,10 @@ class DashboardManager {
       priority: '',
       status: ''
     };
+    this.activityDrawerOpen = false;
+    this.calendarDrawerOpen = false;
+    this.profileDrawerOpen = false;
+    this.newMenuOpen = false;
   }
 
   escapeHTML(str) {
@@ -24,6 +28,13 @@ class DashboardManager {
     const d = new Date(value);
     if (isNaN(d)) return '-';
     return d.toLocaleDateString();
+  }
+
+  formatTime(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d)) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   isToday(dateStr) {
@@ -66,15 +77,12 @@ class DashboardManager {
   applyFilters(records, entityType) {
     return records.filter(r => {
       if (this.filters.owner && (r.owner_id || '').toLowerCase().indexOf(this.filters.owner.toLowerCase()) === -1) return false;
-
       if (this.filters.serviceType && ['leads', 'requirements', 'deals'].includes(entityType)) {
         if ((r.service_interest || r.service_type || '') !== this.filters.serviceType) return false;
       }
-
       if (this.filters.priority && ['leads', 'requirements', 'deals', 'tasks'].includes(entityType)) {
         if ((r.priority || '') !== this.filters.priority) return false;
       }
-
       if (this.filters.status) {
         let st = '';
         if (entityType === 'leads') st = r.pipeline_stage || '';
@@ -85,34 +93,30 @@ class DashboardManager {
         else if (entityType === 'proposals') st = r.status || '';
         else if (entityType === 'purchaseOrders') st = r.status || '';
         else if (entityType === 'sourcingCandidates') st = r.evaluation_status || r.sla_status || '';
-
         if (!st || st !== this.filters.status) return false;
       }
-
       if (this.filters.date) {
-        const filterDate = this.filters.date;
         let d = '';
         if (entityType === 'tasks') d = r.due_date;
         else if (entityType === 'invoices') d = r.issue_date || r.due_date;
-        else if (entityType === 'proposals') d = r.sent_date || r.valid_until;
-        else if (entityType === 'purchaseOrders') d = r.issue_date || r.delivery_date;
         else if (entityType === 'deals') d = r.start_date || r.created_at;
         else d = r.created_at;
-
-        if (!d || d.split('T')[0] !== filterDate) return false;
+        if (d && d.split('T')[0] !== this.filters.date) return false;
       }
-
       return true;
     });
   }
 
+  // ============================================================
+  //  RENDER ENTRY
+  // ============================================================
   render() {
+    const user = auth.getCurrentUser();
+    if (!user) return;
     const container = document.getElementById('dashboard-container');
     if (!container) return;
 
-    const user = auth.getCurrentUser();
-    if (!user) { container.innerHTML = ''; return; }
-
+    // Gather data
     const leads = this.applyFilters(db.getRecords('leads', user), 'leads');
     const reqs = this.applyFilters(db.getRecords('requirements', user), 'requirements');
     const deals = this.applyFilters(db.getRecords('deals', user), 'deals');
@@ -121,350 +125,635 @@ class DashboardManager {
     const proposals = this.applyFilters(db.getRecords('proposals', user), 'proposals');
     const purchaseOrders = this.applyFilters(db.getRecords('purchaseOrders', user), 'purchaseOrders');
     const activities = this.applyFilters(db.getRecords('activities', user), 'activities');
+    const sourcingCandidates = this.applyFilters(db.getRecords('sourcingCandidates', user), 'sourcingCandidates');
 
     const isManager = user.role === 'manager';
     const isTeamLead = user.role === 'team_lead';
+    const roleLabel = isManager ? 'Manager' : (isTeamLead ? 'Team Lead' : 'Employee');
 
-    let html = '';
-
-    // === HERO ===
-    const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const roleLabel = user.role === 'manager' ? 'Manager' : (user.role === 'team_lead' ? 'Team Lead' : 'Employee');
-    html += `
-      <div class="card dash-hero" style="border-left: 4px solid var(--primary); animation: dashFadeIn 0.4s ease;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h3 style="margin-bottom: 4px;">Welcome, ${this.escapeHTML(user.name)}</h3>
-            <p style="color: var(--muted); font-size: 0.9em;">${todayStr} &middot; ${this.escapeHTML(roleLabel)}</p>
-            <p style="margin-top: 8px; font-size: 0.85em; color: var(--body);">${this.escapeHTML(String(leads.length))} leads &middot; ${this.escapeHTML(String(reqs.length))} requirements &middot; ${this.escapeHTML(String(deals.length))} deals in scope</p>
-          </div>
-          <div id="dash-quick-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-primary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.leadsManager.openLeadModal()">+ Lead</button>
-            <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.requirementsManager.openRequirementModal()">+ Requirement</button>
-    `;
-    if (isManager || isTeamLead) {
-      html += `
-            <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.databaseManager.openModal('contacts')">+ Contact</button>
-      `;
-    }
-    html += `
-          </div>
-        </div>
-      </div>
-    `;
-
-    // === FILTERS ===
-    html += `
-      <div class="card" id="dashboard-filters" style="padding: 12px 16px;">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-          <span style="font-weight: 600; font-size: 0.85em; color: var(--muted);">Filters:</span>
-          <input type="text" id="dash-filter-owner" class="form-control" placeholder="Owner" value="${this.escapeHTML(this.filters.owner)}" style="width: 120px; font-size: 0.85em;">
-          <input type="date" id="dash-filter-date" class="form-control" value="${this.filters.date || ''}" style="width: 140px; font-size: 0.85em;">
-          <select id="dash-filter-service" class="form-control" style="width: 140px; font-size: 0.85em;">
-            <option value="">All Services</option>
-            <option value="Corporate Training" ${this.filters.serviceType === 'Corporate Training' ? 'selected' : ''}>Corporate Training</option>
-            <option value="Video Content Development" ${this.filters.serviceType === 'Video Content Development' ? 'selected' : ''}>Video Content Development</option>
-            <option value="Automation Consulting" ${this.filters.serviceType === 'Automation Consulting' ? 'selected' : ''}>Automation Consulting</option>
-          </select>
-          <select id="dash-filter-priority" class="form-control" style="width: 110px; font-size: 0.85em;">
-            <option value="">All Priorities</option>
-            <option value="High" ${this.filters.priority === 'High' ? 'selected' : ''}>High</option>
-            <option value="Medium" ${this.filters.priority === 'Medium' ? 'selected' : ''}>Medium</option>
-            <option value="Low" ${this.filters.priority === 'Low' ? 'selected' : ''}>Low</option>
-          </select>
-          <select id="dash-filter-status" class="form-control" style="width: 130px; font-size: 0.85em;">
-            <option value="">All Statuses</option>
-            <option value="New" ${this.filters.status === 'New' ? 'selected' : ''}>New</option>
-            <option value="Contacted" ${this.filters.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
-            <option value="Interested" ${this.filters.status === 'Interested' ? 'selected' : ''}>Interested</option>
-            <option value="Follow-up" ${this.filters.status === 'Follow-up' ? 'selected' : ''}>Follow-up</option>
-            <option value="Converted" ${this.filters.status === 'Converted' ? 'selected' : ''}>Converted</option>
-            <option value="Sourcing" ${this.filters.status === 'Sourcing' ? 'selected' : ''}>Sourcing</option>
-            <option value="Proposal Pending" ${this.filters.status === 'Proposal Pending' ? 'selected' : ''}>Proposal Pending</option>
-            <option value="PO Pending" ${this.filters.status === 'PO Pending' ? 'selected' : ''}>PO Pending</option>
-            <option value="Confirmed" ${this.filters.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
-            <option value="Live" ${this.filters.status === 'Live' ? 'selected' : ''}>Live</option>
-            <option value="Completed" ${this.filters.status === 'Completed' ? 'selected' : ''}>Completed</option>
-            <option value="Pending" ${this.filters.status === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="Unpaid" ${this.filters.status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
-            <option value="Overdue" ${this.filters.status === 'Overdue' ? 'selected' : ''}>Overdue</option>
-            <option value="Breached" ${this.filters.status === 'Breached' ? 'selected' : ''}>Breached</option>
-            <option value="At Risk" ${this.filters.status === 'At Risk' ? 'selected' : ''}>At Risk</option>
-          </select>
-          <button class="btn btn-secondary" style="font-size: 0.8em; padding: 4px 10px;" onclick="window.dashboardManager.clearFilters()">Clear</button>
-        </div>
-      </div>
-    `;
-
-    // === KPIs ===
-    const newLeads = leads.filter(l => l.pipeline_stage === 'New' || (!l.pipeline_stage && !l.status));
-    const activeLeads = leads.filter(l => l.pipeline_stage && l.pipeline_stage !== 'Lost' && l.pipeline_stage !== 'Converted');
-    const activeReqs = reqs.filter(r => r.status !== 'Closed' && r.status !== 'Cancelled');
-    const activeDeals = deals.filter(d => d.status !== 'Completed' && d.status !== 'Cancelled' && d.status !== 'Lost');
-    const pendingPaymentDeals = deals.filter(d => d.payment_status && d.payment_status !== 'Paid');
-    const unpaidInvoicesAll = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Overdue');
-    const pendingPaymentsCount = pendingPaymentDeals.length + unpaidInvoicesAll.length;
-
-    const overdueFollowups = leads.filter(l => this.isOverdue(l.next_follow_up_date));
-    const overdueTasks = tasks.filter(t => t.status !== 'Completed' && this.isOverdue(t.due_date));
-    const slaBreaches = overdueFollowups.length + overdueTasks.length;
-
-    const kpis = [
-      { label: 'New Leads', value: newLeads.length, color: 'var(--primary)' },
-      { label: 'Active Leads', value: activeLeads.length, color: 'var(--primary-active)' },
-      { label: 'Active Requirements', value: activeReqs.length, color: 'var(--warning)' },
-      { label: 'Active Deals', value: activeDeals.length, color: 'var(--success)' },
-      { label: 'Pending Payments', value: pendingPaymentsCount, color: 'var(--warning)' },
-      { label: 'SLA Breaches', value: slaBreaches, color: 'var(--error)' }
-    ];
-
-    html += `<div id="dashboard-kpis" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">`;
-    kpis.forEach(kpi => {
-      html += `
-        <div class="card" style="flex: 1; min-width: 130px; padding: 14px; text-align: center; border-top: 3px solid ${kpi.color};">
-          <div style="font-size: 1.6em; font-weight: bold; color: ${kpi.color};">${kpi.value}</div>
-          <div style="font-size: 0.8em; color: var(--muted); margin-top: 4px;">${this.escapeHTML(kpi.label)}</div>
-        </div>
-      `;
-    });
-    html += `</div>`;
-
-    // === DAILY ACTIONS ===
+    // Computed data
     const todayFollowups = leads.filter(l => this.isToday(l.next_follow_up_date));
     const todayTasks = tasks.filter(t => t.status !== 'Completed' && this.isToday(t.due_date));
-    const todayPaymentFollowups = deals.filter(d => this.isToday(d.payment_followup_date));
-    const pendingProposals = reqs.filter(r => r.proposal_status && r.proposal_status !== 'Sent' && r.proposal_status !== 'Accepted');
-    const pendingPOs = reqs.filter(r => r.po_status && r.po_status !== 'Received' && r.po_status !== 'Approved');
+    const overdueFollowups = leads.filter(l => this.isOverdue(l.next_follow_up_date));
+    const overdueTasks = tasks.filter(t => t.status !== 'Completed' && this.isOverdue(t.due_date));
+    const followupsDueToday = todayFollowups.length + todayTasks.length;
+    const overdueCount = overdueFollowups.length + overdueTasks.length;
 
-    const isCall = (item) => {
-      const text = `${item.title || ''} ${item.description || ''} ${item.type || ''}`.toLowerCase();
-      return text.includes('call');
-    };
+    const slaBreaches = sourcingCandidates.filter(sc => sc.sla_status === 'Breached' || sc.sla_status === 'At Risk');
+    const trainingsStartingTomorrow = deals.filter(d => this.isTomorrow(d.start_date) && d.status !== 'Completed');
+    const trainingsToday = deals.filter(d => this.isToday(d.start_date) && d.status !== 'Completed');
+    const trainingReadiness = trainingsStartingTomorrow.length + trainingsToday.length;
 
-    const pendingCalls = [...tasks, ...activities]
-      .filter(item => item.status !== 'Completed' && isCall(item))
-      .sort((a, b) => new Date(a.due_date || a.created_at) - new Date(b.due_date || b.created_at));
+    const priorityOpportunities = [
+      ...leads.filter(l => l.priority === 'High' && l.pipeline_stage !== 'Lost' && l.pipeline_stage !== 'Dormant'),
+      ...reqs.filter(r => r.priority === 'High' && r.status !== 'Lost' && r.status !== 'Closed'),
+      ...deals.filter(d => d.priority === 'High' && d.status !== 'Completed' && d.status !== 'Cancelled')
+    ];
 
-    html += `
-      <div class="card" id="dashboard-daily-actions">
-        <h3 style="font-size: 1.1em; margin-bottom: 12px;">Daily Actions</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-    `;
-
-    // Today's Follow-ups
-    html += this.renderActionList('Today\'s Follow-ups', todayFollowups, l =>
-      `${this.escapeHTML(l.company_name || l.contact_person || 'Lead')} - ${this.escapeHTML(l.follow_up_type || 'Follow-up')}`,
-      'var(--primary)'
-    );
-
-    // Overdue Follow-ups
-    html += this.renderActionList('Overdue Follow-ups', overdueFollowups, l =>
-      `${this.escapeHTML(l.company_name || 'Lead')} - Due: ${this.formatDate(l.next_follow_up_date)}`,
-      'var(--error)'
-    );
-
-    // Pending Calls
-    html += this.renderActionList('Pending Calls', pendingCalls, item =>
-      `${this.escapeHTML(item.title || item.type || 'Call')} - ${this.formatDate(item.due_date || item.created_at)}`,
-      'var(--primary)'
-    );
-
-    // Today's Tasks
-    html += this.renderActionList('Today\'s Tasks', todayTasks.filter(t => !isCall(t)), t =>
-      `${this.escapeHTML(t.title || 'Task')} [${this.escapeHTML(t.priority || '-')}]`,
-      'var(--warning)'
-    );
-
-    // Payment Follow-ups
-    html += this.renderActionList('Payment Follow-ups', todayPaymentFollowups, d =>
-      `${this.escapeHTML(d.title || d.project_name || 'Deal')} - ${this.escapeHTML(d.payment_status || 'Pending')}`,
-      'var(--warning)'
-    );
-
-    html += `</div></div>`;
-
-    // === ALERTS ===
-    const unpaidInvoices = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Overdue');
-    const unpaidDeals = deals.filter(d => d.payment_status && d.payment_status !== 'Paid' && d.invoice_amount);
-    const trainingsStartingSoon = deals.filter(d =>
-      (this.isToday(d.start_date) || this.isTomorrow(d.start_date)) && d.status !== 'Completed'
-    );
-    const missedFollowups = leads.filter(l => this.isOverdue(l.next_follow_up_date));
-    const sourcingDelays = [];
-    const sourcingCandidates = this.applyFilters(db.getRecords('sourcingCandidates', user), 'sourcingCandidates');
-    sourcingCandidates.forEach(sc => {
-      if (sc.sla_status === 'Breached' || sc.sla_status === 'At Risk') {
-        sourcingDelays.push(sc);
-      }
-    });
-
-    html += `
-      <div class="card" id="dashboard-alerts">
-        <h3 style="font-size: 1.1em; margin-bottom: 12px; color: var(--error);">Alerts & Warnings</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-    `;
-
-    html += this.renderActionList('Missed Follow-ups', missedFollowups.slice(0, 5), l =>
-      `${this.escapeHTML(l.company_name || 'Lead')} - ${this.formatDate(l.next_follow_up_date)}`,
-      'var(--error)'
-    );
-
-    html += this.renderActionList('Sourcing Delays', sourcingDelays.slice(0, 5), sc =>
-      `${this.escapeHTML(sc.candidate_name || 'Candidate')} - ${this.escapeHTML(sc.sla_status || '-')}`,
-      'var(--warning)'
-    );
-
-    html += this.renderActionList('Unpaid Invoices', unpaidInvoices.slice(0, 5), i =>
-      `${this.escapeHTML(i.invoice_number || 'Invoice')} - ${this.escapeHTML(i.amount || '0')}`,
-      'var(--error)',
-      'dash-payment-alerts'
-    );
-
-    html += this.renderActionList('Trainings Starting Soon', trainingsStartingSoon.slice(0, 5), d =>
-      `${this.escapeHTML(d.title || d.project_name || 'Deal')} - ${this.formatDate(d.start_date)}`,
-      'var(--primary)'
-    );
-
-    html += `</div></div>`;
-
-    // === CALENDAR SNAPSHOT ===
-    const upcomingItems = [];
-
-    leads.forEach(l => {
-      if (this.isUpcoming(l.next_follow_up_date, 7)) {
-        upcomingItems.push({ date: l.next_follow_up_date, type: 'Lead Follow-up', label: l.company_name || l.contact_person || 'Lead' });
-      }
-    });
-    deals.forEach(d => {
-      if (this.isUpcoming(d.start_date, 7)) {
-        upcomingItems.push({ date: d.start_date, type: 'Training Start', label: d.title || d.project_name || 'Deal' });
-      }
-      if (this.isUpcoming(d.payment_followup_date, 7)) {
-        upcomingItems.push({ date: d.payment_followup_date, type: 'Payment Follow-up', label: d.title || 'Deal' });
-      }
-    });
-    tasks.forEach(t => {
-      if (t.status !== 'Completed' && this.isUpcoming(t.due_date, 7)) {
-        let type = 'Task Due';
-        const text = `${t.title || ''} ${t.description || ''}`.toLowerCase();
-        if (text.includes('evaluation')) type = 'Evaluation Call';
-        else if (text.includes('client')) type = 'Client Call';
-        else if (text.includes('trainer')) type = 'Trainer Call';
-        else if (text.includes('call')) type = 'Call';
-        upcomingItems.push({ date: t.due_date, type: type, label: t.title || 'Task' });
-      }
-    });
-
-    activities.forEach(a => {
-      if (this.isUpcoming(a.created_at || a.due_date, 7)) {
-        const text = `${a.type || ''} ${a.description || ''}`.toLowerCase();
-        if (text.includes('call') || text.includes('evaluation') || text.includes('client') || text.includes('trainer')) {
-          let type = 'Call';
-          if (text.includes('evaluation')) type = 'Evaluation Call';
-          else if (text.includes('client')) type = 'Client Call';
-          else if (text.includes('trainer')) type = 'Trainer Call';
-          upcomingItems.push({ date: a.created_at || a.due_date, type: type, label: a.type || 'Activity' });
-        }
-      }
-    });
-
-    upcomingItems.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    html += `
-      <div class="card" id="dashboard-calendar">
-        <h3 style="font-size: 1.1em; margin-bottom: 12px;">Upcoming 7 Days</h3>
-    `;
-    if (upcomingItems.length === 0) {
-      html += `<p style="color: var(--muted); font-size: 0.85em;">No upcoming items in the next 7 days.</p>`;
-    } else {
-      html += `<table class="data-table" style="font-size: 0.85em;"><thead><tr><th>Date</th><th>Type</th><th>Details</th></tr></thead><tbody>`;
-      upcomingItems.slice(0, 10).forEach(item => {
-        html += `<tr><td>${this.formatDate(item.date)}</td><td>${this.escapeHTML(item.type)}</td><td>${this.escapeHTML(item.label)}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-    }
-    html += `</div>`;
-
-    // === PENDING APPROVALS ===
     const pendingProposalApprovals = reqs.filter(r => r.approval_status && r.approval_status !== 'Approved' && r.approval_status !== 'Rejected');
     const pendingPOApprovals = purchaseOrders.filter(po => po.status && po.status !== 'Approved' && po.status !== 'Rejected' && po.status !== 'Delivered');
     const pendingInvoiceApprovals = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Draft');
     const pendingTrainerFinalisation = deals.filter(d => d.selected_trainer_id && d.trainer_confirmation !== 'Confirmed' && d.status !== 'Completed');
 
+    const todayPaymentFollowups = deals.filter(d => this.isToday(d.payment_followup_date));
+    const pendingProposals = reqs.filter(r => r.proposal_status && r.proposal_status !== 'Sent' && r.proposal_status !== 'Accepted');
+
+    const unpaidInvoices = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Overdue');
+    const unpaidDeals = deals.filter(d => d.payment_status && d.payment_status !== 'Paid' && d.invoice_amount);
+    let pendingPaymentTotal = 0;
+    unpaidInvoices.forEach(i => { pendingPaymentTotal += parseFloat(i.amount || i.invoice_amount || 0); });
+    unpaidDeals.forEach(d => { pendingPaymentTotal += parseFloat(d.invoice_amount || 0); });
+    const paymentDisplayStr = pendingPaymentTotal >= 100000
+      ? 'Rs ' + (pendingPaymentTotal / 100000).toFixed(1) + 'L'
+      : 'Rs ' + pendingPaymentTotal.toLocaleString('en-IN');
+
+    // Date strings
+    const now = new Date();
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateStr = now.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
+
+    // ============================================================
+    //  BUILD HTML
+    // ============================================================
+    let html = '';
+
+    // ---------- DASHBOARD TOP BAR ----------
     html += `
-      <div class="card" id="dashboard-approvals">
-        <h3 style="font-size: 1.1em; margin-bottom: 12px;">Pending Approvals</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-    `;
-
-    html += this.renderActionList('Proposal Approvals', pendingProposalApprovals.slice(0, 5), r =>
-      `${this.escapeHTML(r.title || 'Requirement')} - ${this.escapeHTML(r.approval_status || 'Pending')}`,
-      'var(--warning)'
-    );
-
-    html += this.renderActionList('PO Pending', pendingPOApprovals.slice(0, 5), po =>
-      `${this.escapeHTML(po.po_number || 'PO')} - ${this.escapeHTML(po.status || 'Pending')}`,
-      'var(--warning)'
-    );
-
-    html += this.renderActionList('Invoice / Payment', pendingInvoiceApprovals.slice(0, 5), i =>
-      `${this.escapeHTML(i.invoice_number || 'Invoice')} - ${this.escapeHTML(i.status || 'Pending')}`,
-      'var(--primary)'
-    );
-
-    html += this.renderActionList('Trainer Finalisation', pendingTrainerFinalisation.slice(0, 5), d =>
-      `${this.escapeHTML(d.title || d.project_name || 'Deal')} - ${this.escapeHTML(d.trainer_confirmation || 'Unconfirmed')}`,
-      'var(--muted)'
-    );
-
-    html += `</div></div>`;
-
-    // === QUICK NAV BUTTONS ===
-    html += `
-      <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap; padding: 12px 16px;">
-        <button class="btn btn-secondary" style="font-size: 0.8em;" onclick="document.getElementById('dashboard-daily-actions').scrollIntoView({behavior:'smooth'})">View Follow-ups</button>
-        <button class="btn btn-secondary" style="font-size: 0.8em;" onclick="document.getElementById('dashboard-alerts').scrollIntoView({behavior:'smooth'})">View SLA Breaches</button>
-        <button class="btn btn-secondary" style="font-size: 0.8em;" onclick="const el = document.getElementById('dash-payment-alerts'); if (el) { el.scrollIntoView({behavior:'smooth'}); } else { document.getElementById('dashboard-approvals').scrollIntoView({behavior:'smooth'}); }">View Pending Payments</button>
+    <div class="te-dash-topbar" id="te-dash-topbar">
+      <div class="te-search-wrap">
+        <svg class="te-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="te-search-input" id="te-global-search" placeholder="Search Lead ID, Requirement ID, Deal ID, Client, Trainer...">
       </div>
+      <div class="te-topbar-controls">
+        <div class="te-topbar-btn-wrap" id="te-new-btn-wrap">
+          <button class="te-topbar-btn te-btn-new" id="te-btn-new" title="New">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New</span>
+          </button>
+          <div class="te-new-dropdown hidden" id="te-new-dropdown">
+            <div class="te-dropdown-group-label">Sales Flow</div>
+            <button class="te-dropdown-item" data-action="add-lead">Add Lead</button>
+            <button class="te-dropdown-item" data-action="add-requirement">Add Requirement</button>
+            <button class="te-dropdown-item" data-action="add-deal">Add Deal</button>
+            <div class="te-dropdown-divider"></div>
+            <div class="te-dropdown-group-label">Database</div>
+            <button class="te-dropdown-item" data-action="add-contact">Add Contact</button>
+            <button class="te-dropdown-item" data-action="add-trainer">Add Trainer</button>
+          </div>
+        </div>
+        <button class="te-topbar-icon-btn" id="te-btn-activity" title="Activity">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </button>
+        <button class="te-topbar-icon-btn" id="te-btn-calendar" title="Calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
+        <button class="te-topbar-icon-btn te-notif-btn" id="te-btn-notif" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          ${overdueCount > 0 ? '<span class="te-notif-dot"></span>' : ''}
+        </button>
+        <button class="te-profile-chip" id="te-btn-profile">
+          <span class="te-avatar">${this.escapeHTML((user.name || 'U')[0])}</span>
+          <span class="te-profile-name">${this.escapeHTML(user.name || 'User')}</span>
+          <span class="te-profile-role">${this.escapeHTML(roleLabel)}</span>
+        </button>
+      </div>
+    </div>
     `;
+
+    // ---------- HERO SURFACE ----------
+    html += `
+    <div class="te-hero">
+      <div class="te-hero-inner">
+        <div class="te-hero-top">
+          <div class="te-pulse-strip">
+            <span class="te-pulse-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </span>
+            <span class="te-pulse-label">TechnoEdge Pulse</span>
+            <span class="te-live-dot"></span>
+            <span class="te-live-text">Live priorities</span>
+          </div>
+          <div class="te-date-card">
+            <span class="te-date-today">Today</span>
+            <span class="te-date-full">${this.escapeHTML(weekday)}, ${this.escapeHTML(dateStr)}</span>
+          </div>
+        </div>
+        <h2 class="te-hero-heading">What needs action today</h2>
+
+        <div class="te-priority-cards">
+          <!-- Card 1: Follow-ups (Navy) -->
+          <div class="te-pcard te-pcard-navy">
+            <div class="te-pcard-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <div class="te-pcard-value">${followupsDueToday}</div>
+            <div class="te-pcard-title">Follow-ups due today</div>
+            ${overdueCount > 0 ? `<span class="te-pcard-badge te-badge-red">${overdueCount} overdue</span>` : '<span class="te-pcard-badge te-badge-muted">On track</span>'}
+            <div class="te-pcard-footer">Due today</div>
+          </div>
+          <!-- Card 2: SLA breaches -->
+          <div class="te-pcard te-pcard-white">
+            <div class="te-pcard-icon te-icon-red">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="te-pcard-value">${slaBreaches.length}</div>
+            <div class="te-pcard-title">SLA breaches</div>
+            <span class="te-pcard-badge te-badge-red">Urgent</span>
+            <div class="te-pcard-footer">Needs sourcing action</div>
+          </div>
+          <!-- Card 3: Training readiness -->
+          <div class="te-pcard te-pcard-white">
+            <div class="te-pcard-icon te-icon-amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="te-pcard-value">${trainingReadiness}</div>
+            <div class="te-pcard-title">Training readiness</div>
+            <span class="te-pcard-badge te-badge-amber">Tomorrow</span>
+            <div class="te-pcard-footer">Readiness check</div>
+          </div>
+          <!-- Card 4: Priority opportunities (Violet gradient) -->
+          <div class="te-pcard te-pcard-violet">
+            <div class="te-pcard-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="te-pcard-value">${priorityOpportunities.length}</div>
+            <div class="te-pcard-title">Priority opportunities</div>
+            <span class="te-pcard-badge te-badge-violet">TechnoEdge focus</span>
+            <div class="te-pcard-footer">Training &middot; Video &middot; Automation</div>
+            <div class="te-pcard-pills">
+              <span class="te-pill">Training</span>
+              <span class="te-pill">Video</span>
+              <span class="te-pill">Automation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+
+    // ---------- APPROVAL QUEUE ----------
+    html += `
+    <div class="te-section-header">
+      <div>
+        <h3 class="te-section-title">Approval queue</h3>
+        <p class="te-section-sub">Compact management view for decisions that unblock work.</p>
+      </div>
+      <button class="te-btn-outline" id="te-btn-review-queue">Review queue</button>
+    </div>
+    <div class="te-approval-row">
+      <div class="te-approval-card">
+        <div class="te-approval-icon te-icon-amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="te-approval-info">
+          <div class="te-approval-label">Proposal approval</div>
+          <div class="te-approval-count">${pendingProposalApprovals.length} pending</div>
+        </div>
+      </div>
+      <div class="te-approval-card">
+        <div class="te-approval-icon te-icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="23 7 16 12 16 2 23 7"/></svg>
+        </div>
+        <div class="te-approval-info">
+          <div class="te-approval-label">PO approval</div>
+          <div class="te-approval-count">${pendingPOApprovals.length} pending</div>
+        </div>
+      </div>
+      <div class="te-approval-card">
+        <div class="te-approval-icon te-icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="te-approval-info">
+          <div class="te-approval-label">Invoice approval</div>
+          <div class="te-approval-count">${pendingInvoiceApprovals.length} pending</div>
+        </div>
+      </div>
+      <div class="te-approval-card">
+        <div class="te-approval-icon te-icon-purple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="te-approval-info">
+          <div class="te-approval-label">Trainer finalisation</div>
+          <div class="te-approval-count">${pendingTrainerFinalisation.length} pending</div>
+        </div>
+      </div>
+    </div>
+    `;
+
+    // ---------- TWO-COLUMN LAYOUT ----------
+    // Build work queue items
+    const workQueue = this.buildWorkQueue(leads, reqs, deals, tasks, todayPaymentFollowups, pendingProposals);
+
+    html += `
+    <div class="te-two-col">
+      <div class="te-col-left">
+        <div class="te-section-header">
+          <h3 class="te-section-title">Today's work queue</h3>
+          <button class="te-btn-outline te-btn-sm">View all</button>
+        </div>
+        <div class="te-work-queue">
+    `;
+
+    if (workQueue.length === 0) {
+      html += `<div class="te-empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted-soft)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        <p>No pending actions for today.</p>
+      </div>`;
+    } else {
+      workQueue.slice(0, 6).forEach(item => {
+        const statusClass = item.urgency === 'overdue' ? 'te-status-red' : (item.urgency === 'risk' ? 'te-status-amber' : 'te-status-blue');
+        const statusLabel = item.urgency === 'overdue' ? 'Overdue' : (item.urgency === 'risk' ? 'Risk' : 'Today');
+        html += `
+        <div class="te-wq-row">
+          <div class="te-wq-icon ${statusClass}">
+            ${item.icon}
+          </div>
+          <div class="te-wq-body">
+            <div class="te-wq-title">${this.escapeHTML(item.title)}</div>
+            <div class="te-wq-meta">${this.escapeHTML(item.context)}</div>
+          </div>
+          <div class="te-wq-status">
+            <span class="te-wq-badge ${statusClass}">${this.escapeHTML(statusLabel)}</span>
+            <span class="te-wq-time">${this.escapeHTML(item.time)}</span>
+          </div>
+        </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
+      <div class="te-col-right">
+        <div class="te-section-header">
+          <h3 class="te-section-title">Risk alerts</h3>
+          <button class="te-btn-outline te-btn-sm">Resolve</button>
+        </div>
+        <div class="te-risk-list">
+    `;
+
+    // Risk alerts
+    const risks = [];
+    if (slaBreaches.length > 0) risks.push({ text: `${slaBreaches.length} sourcing SLA breach${slaBreaches.length > 1 ? 'es' : ''}`, level: 'red' });
+    if (pendingPaymentTotal > 0) risks.push({ text: `${paymentDisplayStr} pending payment`, level: 'amber' });
+    if (trainingsStartingTomorrow.length > 0) risks.push({ text: `Training starts tomorrow (${trainingsStartingTomorrow.length})`, level: 'blue' });
+    if (pendingProposalApprovals.length > 0) risks.push({ text: `${pendingProposalApprovals.length} proposal${pendingProposalApprovals.length > 1 ? 's' : ''} waiting approval`, level: 'amber' });
+    if (overdueFollowups.length > 0) risks.push({ text: `${overdueFollowups.length} overdue follow-up${overdueFollowups.length > 1 ? 's' : ''}`, level: 'red' });
+    if (pendingTrainerFinalisation.length > 0) risks.push({ text: `${pendingTrainerFinalisation.length} trainer${pendingTrainerFinalisation.length > 1 ? 's' : ''} awaiting confirmation`, level: 'amber' });
+
+    if (risks.length === 0) {
+      html += `<div class="te-empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <p>All clear — no active risks.</p>
+      </div>`;
+    } else {
+      risks.forEach(r => {
+        const iconColor = r.level === 'red' ? 'var(--error)' : (r.level === 'amber' ? 'var(--warning)' : 'var(--info)');
+        const bgColor = r.level === 'red' ? 'var(--surface-red-soft)' : (r.level === 'amber' ? 'var(--surface-yellow-soft)' : 'var(--surface-blue-card)');
+        html += `
+        <div class="te-risk-row" style="border-left: 3px solid ${iconColor}; background: ${bgColor};">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="te-risk-text">${this.escapeHTML(r.text)}</span>
+        </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
+    </div>
+    `;
+
+    // ---------- DRAWERS ----------
+    html += this.renderDrawers(user, roleLabel, leads, reqs, deals, tasks, invoices, activities, sourcingCandidates, followupsDueToday, overdueCount, slaBreaches, pendingProposalApprovals);
 
     container.innerHTML = html;
 
-    // Bind filter events
-    this.bindFilters();
+    // Show/hide topbar based on active tab
+    this.updateTopBarVisibility();
+    this.bindDashboardEvents(user);
   }
 
-  renderActionList(title, items, labelFn, accentColor, id = null) {
-    let html = `<div ${id ? `id="${id}"` : ''}>
-      <div style="font-size: 0.85em; font-weight: 600; margin-bottom: 6px; color: ${accentColor};">${this.escapeHTML(title)} (${items.length})</div>`;
-    if (items.length === 0) {
-      html += `<p style="font-size: 0.8em; color: var(--muted-soft);">None</p>`;
-    } else {
-      html += `<ul style="list-style: none; padding: 0; margin: 0;">`;
-      items.slice(0, 5).forEach(item => {
-        html += `<li style="font-size: 0.8em; padding: 3px 0; border-bottom: 1px solid var(--hairline);">${labelFn(item)}</li>`;
+  // ============================================================
+  //  BUILD WORK QUEUE
+  // ============================================================
+  buildWorkQueue(leads, reqs, deals, tasks, todayPaymentFollowups, pendingProposals) {
+    const items = [];
+    const phoneIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+    const docIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+    const userIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    const dollarIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+
+    // Follow-ups due today (leads)
+    leads.filter(l => this.isToday(l.next_follow_up_date)).forEach(l => {
+      items.push({
+        title: `Follow-up: ${l.company_name || l.contact_person || 'Lead'}`,
+        context: `Lead ${l.id || ''} \u00b7 ${l.service_interest || 'General'} \u00b7 Owner: ${l.owner_id || '-'}`,
+        time: this.formatTime(l.next_follow_up_date) || 'Today',
+        urgency: 'today',
+        icon: phoneIcon,
+        sort: new Date(l.next_follow_up_date || 0)
       });
-      if (items.length > 5) {
-        html += `<li style="font-size: 0.75em; color: var(--muted); padding: 3px 0;">+${items.length - 5} more</li>`;
-      }
-      html += `</ul>`;
+    });
+    // Overdue follow-ups
+    leads.filter(l => this.isOverdue(l.next_follow_up_date)).slice(0, 3).forEach(l => {
+      items.push({
+        title: `Overdue follow-up: ${l.company_name || l.contact_person || 'Lead'}`,
+        context: `Lead ${l.id || ''} \u00b7 Due: ${this.formatDate(l.next_follow_up_date)}`,
+        time: this.formatTime(l.next_follow_up_date) || 'Overdue',
+        urgency: 'overdue',
+        icon: phoneIcon,
+        sort: new Date(l.next_follow_up_date || 0)
+      });
+    });
+    // Pending proposals
+    reqs.filter(r => r.proposal_status && r.proposal_status !== 'Sent' && r.proposal_status !== 'Accepted').slice(0, 2).forEach(r => {
+      items.push({
+        title: `Share proposal: ${r.title || r.service_interest || 'Requirement'}`,
+        context: `Requirement ${r.id || ''} \u00b7 Proposal pending`,
+        time: 'Today',
+        urgency: 'today',
+        icon: docIcon,
+        sort: new Date(r.created_at || 0)
+      });
+    });
+    // Trainer confirmation
+    deals.filter(d => d.selected_trainer_id && d.trainer_confirmation !== 'Confirmed' && d.status !== 'Completed').slice(0, 2).forEach(d => {
+      items.push({
+        title: `Confirm trainer: ${d.title || d.project_name || 'Deal'}`,
+        context: `Deal ${d.id || ''} \u00b7 SLA window`,
+        time: 'Risk',
+        urgency: 'risk',
+        icon: userIcon,
+        sort: new Date(d.start_date || d.created_at || 0)
+      });
+    });
+    // Payment follow-ups
+    deals.filter(d => this.isToday(d.payment_followup_date)).slice(0, 2).forEach(d => {
+      items.push({
+        title: `Payment follow-up: ${d.title || d.project_name || 'Deal'}`,
+        context: `Deal ${d.id || ''} \u00b7 ${d.payment_status || 'Pending'}`,
+        time: this.formatTime(d.payment_followup_date) || 'Today',
+        urgency: 'today',
+        icon: dollarIcon,
+        sort: new Date(d.payment_followup_date || 0)
+      });
+    });
+    // Tasks due today
+    tasks.filter(t => t.status !== 'Completed' && this.isToday(t.due_date)).slice(0, 2).forEach(t => {
+      items.push({
+        title: t.title || 'Task',
+        context: `Task \u00b7 Priority: ${t.priority || '-'}`,
+        time: this.formatTime(t.due_date) || 'Today',
+        urgency: 'today',
+        icon: docIcon,
+        sort: new Date(t.due_date || 0)
+      });
+    });
+
+    items.sort((a, b) => {
+      const urgencyOrder = { overdue: 0, risk: 1, today: 2 };
+      return (urgencyOrder[a.urgency] || 2) - (urgencyOrder[b.urgency] || 2);
+    });
+    return items;
+  }
+
+  // ============================================================
+  //  DRAWERS
+  // ============================================================
+  renderDrawers(user, roleLabel, leads, reqs, deals, tasks, invoices, activities, sourcingCandidates, followupsDueToday, overdueCount, slaBreaches, pendingProposalApprovals) {
+    let html = '';
+    // --- Activity Drawer ---
+    const recentActivities = activities.slice(-20).reverse();
+    html += `
+    <div class="te-drawer-overlay hidden" id="te-activity-overlay"></div>
+    <div class="te-drawer hidden" id="te-activity-drawer">
+      <div class="te-drawer-header">
+        <h3>Recent Activity</h3>
+        <button class="te-drawer-close" id="te-close-activity">&times;</button>
+      </div>
+      <div class="te-drawer-body">
+    `;
+    if (recentActivities.length === 0) {
+      html += '<p class="te-drawer-empty">No recent activity found.</p>';
+    } else {
+      recentActivities.slice(0, 15).forEach(a => {
+        const tag = this.getActivityTag(a);
+        html += `
+        <div class="te-activity-item">
+          <span class="te-activity-tag te-tag-${tag.color}">${this.escapeHTML(tag.label)}</span>
+          <div class="te-activity-desc">${this.escapeHTML(a.description || a.type || 'Activity')}</div>
+          <div class="te-activity-time">${this.formatDate(a.created_at)} ${this.formatTime(a.created_at)}</div>
+        </div>`;
+      });
     }
-    html += `</div>`;
+    html += `</div></div>`;
+
+    // --- Calendar Drawer ---
+    html += `
+    <div class="te-drawer-overlay hidden" id="te-calendar-overlay"></div>
+    <div class="te-drawer hidden" id="te-calendar-drawer">
+      <div class="te-drawer-header">
+        <h3>Calendar</h3>
+        <button class="te-drawer-close" id="te-close-calendar">&times;</button>
+      </div>
+      <div class="te-drawer-body">
+        ${this.renderMiniCalendar()}
+        <h4 style="margin: 16px 0 8px; font-size: 14px; color: var(--body-strong);">Upcoming events</h4>
+    `;
+    const calEvents = this.buildCalendarEvents(leads, deals, tasks, activities);
+    if (calEvents.length === 0) {
+      html += '<p class="te-drawer-empty">No upcoming events.</p>';
+    } else {
+      calEvents.slice(0, 10).forEach(ev => {
+        html += `
+        <div class="te-cal-event">
+          <span class="te-cal-dot" style="background: ${ev.color};"></span>
+          <div class="te-cal-info">
+            <div class="te-cal-title">${this.escapeHTML(ev.type)}</div>
+            <div class="te-cal-detail">${this.escapeHTML(ev.label)} &middot; ${this.formatDate(ev.date)}</div>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div></div>`;
+
+    // --- Profile Drawer ---
+    const activeDeals = deals.filter(d => d.status !== 'Completed' && d.status !== 'Cancelled' && d.status !== 'Lost');
+    html += `
+    <div class="te-drawer-overlay hidden" id="te-profile-overlay"></div>
+    <div class="te-drawer hidden" id="te-profile-drawer">
+      <div class="te-drawer-header">
+        <h3>Profile</h3>
+        <button class="te-drawer-close" id="te-close-profile">&times;</button>
+      </div>
+      <div class="te-drawer-body">
+        <div class="te-profile-card">
+          <div class="te-profile-avatar-lg">${this.escapeHTML((user.name || 'U')[0])}</div>
+          <div class="te-profile-detail">
+            <div class="te-profile-name-lg">${this.escapeHTML(user.name || 'User')}</div>
+            <div class="te-profile-role-lg">${this.escapeHTML(roleLabel)}</div>
+          </div>
+        </div>
+        <div class="te-profile-stats">
+          <div class="te-pstat"><span class="te-pstat-val">${followupsDueToday}</span><span class="te-pstat-label">Follow-ups today</span></div>
+          <div class="te-pstat"><span class="te-pstat-val">${overdueCount + slaBreaches.length}</span><span class="te-pstat-label">Risks to review</span></div>
+          <div class="te-pstat"><span class="te-pstat-val">${pendingProposalApprovals.length}</span><span class="te-pstat-label">Approvals waiting</span></div>
+          <div class="te-pstat"><span class="te-pstat-val">${activeDeals.length}</span><span class="te-pstat-label">Active deals owned</span></div>
+        </div>
+        <div class="te-profile-access">
+          <h4>Access areas</h4>
+          <p>${this.escapeHTML(roleLabel === 'Manager' ? 'All modules — full read/write/delete' : (roleLabel === 'Team Lead' ? 'Team-scoped — read/write, no delete' : 'Own records — read/write only'))}</p>
+        </div>
+      </div>
+    </div>
+    `;
+
     return html;
   }
 
-  bindFilters() {
-    const ownerEl = document.getElementById('dash-filter-owner');
-    const dateEl = document.getElementById('dash-filter-date');
-    const serviceEl = document.getElementById('dash-filter-service');
-    const priorityEl = document.getElementById('dash-filter-priority');
-    const statusEl = document.getElementById('dash-filter-status');
+  getActivityTag(a) {
+    const desc = ((a.description || '') + ' ' + (a.type || '') + ' ' + (a.related_entity || '')).toLowerCase();
+    if (desc.includes('lead')) return { label: 'Lead', color: 'blue' };
+    if (desc.includes('requirement') || desc.includes('req')) return { label: 'Requirement', color: 'purple' };
+    if (desc.includes('deal')) return { label: 'Deal', color: 'green' };
+    if (desc.includes('payment') || desc.includes('invoice')) return { label: 'Payment', color: 'amber' };
+    if (desc.includes('trainer')) return { label: 'Trainer', color: 'red' };
+    return { label: 'System', color: 'gray' };
+  }
 
-    if (ownerEl) ownerEl.addEventListener('input', (e) => { this.filters.owner = e.target.value; this.render(); });
-    if (dateEl) dateEl.addEventListener('change', (e) => { this.filters.date = e.target.value; this.render(); });
-    if (serviceEl) serviceEl.addEventListener('change', (e) => { this.filters.serviceType = e.target.value; this.render(); });
-    if (priorityEl) priorityEl.addEventListener('change', (e) => { this.filters.priority = e.target.value; this.render(); });
-    if (statusEl) statusEl.addEventListener('change', (e) => { this.filters.status = e.target.value; this.render(); });
+  renderMiniCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = now.getDate();
+    const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    let html = `<div class="te-mini-cal"><div class="te-cal-month">${this.escapeHTML(monthName)}</div><div class="te-cal-grid">`;
+    ['S','M','T','W','T','F','S'].forEach(d => { html += `<span class="te-cal-day-label">${d}</span>`; });
+    for (let i = 0; i < firstDay; i++) html += '<span></span>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cls = d === today ? ' te-cal-today' : '';
+      html += `<span class="te-cal-day${cls}">${d}</span>`;
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  buildCalendarEvents(leads, deals, tasks, activities) {
+    const events = [];
+    leads.forEach(l => {
+      if (this.isUpcoming(l.next_follow_up_date, 7)) {
+        events.push({ date: l.next_follow_up_date, type: 'Client call', label: l.company_name || 'Lead', color: 'var(--primary)' });
+      }
+    });
+    deals.forEach(d => {
+      if (this.isUpcoming(d.start_date, 7)) {
+        events.push({ date: d.start_date, type: 'Training start', label: d.title || d.project_name || 'Deal', color: 'var(--success)' });
+      }
+      if (this.isUpcoming(d.payment_followup_date, 7)) {
+        events.push({ date: d.payment_followup_date, type: 'Payment follow-up', label: d.title || 'Deal', color: 'var(--warning)' });
+      }
+    });
+    tasks.forEach(t => {
+      if (t.status !== 'Completed' && this.isUpcoming(t.due_date, 7)) {
+        const text = `${t.title || ''} ${t.description || ''}`.toLowerCase();
+        let type = 'Task';
+        if (text.includes('evaluation')) type = 'Evaluation call';
+        else if (text.includes('trainer')) type = 'Trainer call';
+        else if (text.includes('client')) type = 'Client call';
+        events.push({ date: t.due_date, type, label: t.title || 'Task', color: 'var(--accent-purple)' });
+      }
+    });
+    events.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return events;
+  }
+
+  // ============================================================
+  //  TOPBAR VISIBILITY
+  // ============================================================
+  updateTopBarVisibility() {
+    const topbar = document.getElementById('te-dash-topbar');
+    if (!topbar) return;
+    const dashTab = document.getElementById('tab-dashboard');
+    if (dashTab && dashTab.classList.contains('active')) {
+      topbar.style.display = 'flex';
+    } else {
+      topbar.style.display = 'none';
+    }
+  }
+
+  // ============================================================
+  //  EVENT BINDINGS
+  // ============================================================
+  bindDashboardEvents(user) {
+    const isManager = user.role === 'manager';
+    const isTeamLead = user.role === 'team_lead';
+
+    // New menu
+    const newBtn = document.getElementById('te-btn-new');
+    const newDropdown = document.getElementById('te-new-dropdown');
+    if (newBtn && newDropdown) {
+      newBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        newDropdown.classList.toggle('hidden');
+      });
+      newDropdown.addEventListener('click', (e) => {
+        const item = e.target.closest('[data-action]');
+        if (!item) return;
+        const action = item.getAttribute('data-action');
+        newDropdown.classList.add('hidden');
+        if (action === 'add-lead' && window.leadsManager) window.leadsManager.openLeadModal();
+        if (action === 'add-requirement' && window.requirementsManager) window.requirementsManager.openRequirementModal();
+        if (action === 'add-deal' && window.dealsManager) window.dealsManager.openDealModal();
+        if (action === 'add-contact' && window.databaseManager && (isManager || isTeamLead)) window.databaseManager.openModal('contacts');
+        if (action === 'add-trainer' && window.databaseManager && (isManager || isTeamLead)) window.databaseManager.openModal('trainers');
+      });
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', () => {
+      if (newDropdown && !newDropdown.classList.contains('hidden')) newDropdown.classList.add('hidden');
+    });
+
+    // Drawer toggles
+    this.bindDrawer('te-btn-activity', 'te-activity-drawer', 'te-activity-overlay', 'te-close-activity');
+    this.bindDrawer('te-btn-calendar', 'te-calendar-drawer', 'te-calendar-overlay', 'te-close-calendar');
+    this.bindDrawer('te-btn-profile', 'te-profile-drawer', 'te-profile-overlay', 'te-close-profile');
+
+    // Notification btn -> opens activity drawer
+    const notifBtn = document.getElementById('te-btn-notif');
+    if (notifBtn) {
+      notifBtn.addEventListener('click', () => {
+        const drawer = document.getElementById('te-activity-drawer');
+        const overlay = document.getElementById('te-activity-overlay');
+        if (drawer) drawer.classList.remove('hidden');
+        if (overlay) overlay.classList.remove('hidden');
+      });
+    }
+  }
+
+  bindDrawer(btnId, drawerId, overlayId, closeId) {
+    const btn = document.getElementById(btnId);
+    const drawer = document.getElementById(drawerId);
+    const overlay = document.getElementById(overlayId);
+    const closeBtn = document.getElementById(closeId);
+
+    const open = () => {
+      if (drawer) drawer.classList.remove('hidden');
+      if (overlay) overlay.classList.remove('hidden');
+    };
+    const close = () => {
+      if (drawer) drawer.classList.add('hidden');
+      if (overlay) overlay.classList.add('hidden');
+    };
+
+    if (btn) btn.addEventListener('click', open);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    if (overlay) overlay.addEventListener('click', close);
   }
 
   clearFilters() {

@@ -231,7 +231,7 @@ class ReportsManager {
     this.currentReportCols = [];
 
     const formatKPI = (title, value) => `
-      <div style="flex: 1; min-width: 200px; background: var(--surface-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid var(--primary);">
+      <div style="flex: 1; min-width: 200px; background: var(--surface-card); padding: 20px; border-radius: var(--rounded-xl); box-shadow: var(--shadow-soft); border-left: 4px solid var(--primary);">
         <h4 style="margin: 0 0 10px 0; color: var(--muted); font-size: 14px;">${this.escapeHTML(title)}</h4>
         <div style="font-size: 24px; font-weight: bold; color: var(--body-strong, var(--text-color, inherit));">${this.escapeHTML(value)}</div>
       </div>

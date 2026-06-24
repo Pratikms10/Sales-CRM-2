@@ -113,6 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pageSubtitleEl) {
         pageSubtitleEl.textContent = '';
       }
+
+      const globalTopBar = document.getElementById('global-top-bar');
+      if (globalTopBar) {
+        globalTopBar.classList.add('hidden');
+      }
+
       hideSettingsTopBarControls();
 
       applyRoleRestrictions(user);
@@ -178,8 +184,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pageSubtitleEl) {
         pageSubtitleEl.textContent = '';
       }
+      const globalTopBar = document.getElementById('global-top-bar');
+      if (globalTopBar) {
+        if (tabName !== 'settings') {
+          globalTopBar.classList.add('hidden');
+        } else {
+          globalTopBar.classList.remove('hidden');
+        }
+      }
+
       if (tabName !== 'settings') {
         hideSettingsTopBarControls();
+      }
+
+      // Toggle dashboard top bar visibility
+      if (window.dashboardManager) {
+        window.dashboardManager.updateTopBarVisibility();
       }
 
       if (tabName === 'dashboard' && window.dashboardManager) {

@@ -180,7 +180,7 @@ class DatabaseManager {
         });
 
         if (['clients', 'contacts', 'normal-contacts', 'trainers', 'vendors'].includes(collection)) {
-          html += `<td><span style="font-size: 0.85em; color: #666;">${this.escapeHTML(this.getLinkedCounts(collection, record.id, allRecords))}</span></td>`;
+          html += `<td><span style="font-size: 0.85em; color: var(--muted);">${this.escapeHTML(this.getLinkedCounts(collection, record.id, allRecords))}</span></td>`;
         }
 
         if (!isEmp) {
@@ -189,7 +189,7 @@ class DatabaseManager {
           html += `
             <td>
               <button class="btn btn-secondary btn-db-action" data-action="edit" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px;">Update Profile</button>
-              <button class="btn btn-secondary btn-db-action" data-action="archive" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px; background-color: #fee;">Archive</button>
+              <button class="btn btn-secondary btn-db-action" data-action="archive" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px; background-color: var(--surface-red-soft); color: var(--error); border-color: var(--error);">Archive</button>
               <button class="btn btn-secondary btn-db-action" data-action="check-dup" data-id="${eId}" data-coll="${eColl}" style="padding: 2px 6px; font-size: 11px;">Check Dup</button>
             </td>
           `;
