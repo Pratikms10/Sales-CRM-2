@@ -180,9 +180,12 @@ class DashboardManager {
     // ---------- DASHBOARD TOP BAR ----------
     html += `
     <div class="te-dash-topbar" id="te-dash-topbar">
-      <div class="te-search-wrap">
-        <svg class="te-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="te-search-input" id="te-global-search" placeholder="Search Lead ID, Requirement ID, Deal ID, Client, Trainer...">
+      <div class="te-topbar-left">
+        <h2 class="te-topbar-title">Dashboard</h2>
+        <div class="te-search-wrap">
+          <svg class="te-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="te-search-input" id="te-global-search" placeholder="Search Lead ID, Requirement ID, Deal ID, Client, Trainer...">
+        </div>
       </div>
       <div class="te-topbar-controls">
         <div class="te-topbar-btn-wrap" id="te-new-btn-wrap">

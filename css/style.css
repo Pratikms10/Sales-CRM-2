@@ -605,10 +605,27 @@ main #settings-container {
   z-index: 50;
   animation: dashFadeIn 0.3s ease;
 }
+.te-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.te-topbar-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
 .te-search-wrap {
   position: relative;
-  flex: 1;
+  flex: 1 1 520px;
   max-width: 480px;
+  min-width: 260px;
 }
 .te-search-icon {
   position: absolute;
@@ -1183,6 +1200,8 @@ main #settings-container {
 }
 @media (max-width: 700px) {
   .te-dash-topbar { flex-direction: column; gap: 10px; }
+  .te-topbar-left { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
+  .te-topbar-title { font-size: 22px; }
   .te-search-wrap { max-width: 100%; }
   .te-priority-cards { grid-template-columns: 1fr; }
   .te-approval-row { grid-template-columns: 1fr; }
