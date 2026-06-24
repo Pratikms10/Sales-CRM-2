@@ -69,28 +69,6 @@ class LeadsManager {
       this.openLeadModal();
     });
 
-    const importBtn = document.getElementById('btn-import-leads');
-    if (importBtn) {
-      importBtn.addEventListener('click', () => {
-        const currentUser = auth.getCurrentUser();
-        if (!currentUser || currentUser.role === 'employee') {
-          alert('Access denied');
-          return;
-        }
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        const settingsNav = document.querySelector('[data-tab="settings"]');
-        if (settingsNav) settingsNav.classList.add('active');
-
-        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-        document.getElementById('tab-settings').classList.add('active');
-        document.getElementById('page-title').textContent = 'Settings';
-
-        const sel = document.getElementById('import-collection');
-        if (sel) sel.value = 'leads';
-        if (window.settingsManager) window.settingsManager.render();
-      });
-    }
-
     this.tableBody.addEventListener('click', (e) => {
       const btn = e.target.closest('.action-btn');
       if (btn) {
@@ -138,12 +116,6 @@ class LeadsManager {
     if (!user) return;
 
     let leads = db.getRecords('leads', user);
-
-    const importBtn = document.getElementById('btn-import-leads');
-    if (importBtn) {
-      if (user.role === 'employee') importBtn.classList.add('hidden');
-      else importBtn.classList.remove('hidden');
-    }
 
     // Apply filters
     leads = leads.filter(l => {

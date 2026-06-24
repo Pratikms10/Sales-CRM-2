@@ -141,12 +141,10 @@ class DashboardManager {
           <div id="dash-quick-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn btn-primary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.leadsManager.openLeadModal()">+ Lead</button>
             <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.requirementsManager.openRequirementModal()">+ Requirement</button>
-            <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.dealsManager.openDealModal()">+ Deal</button>
     `;
     if (isManager || isTeamLead) {
       html += `
             <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.databaseManager.openModal('contacts')">+ Contact</button>
-            <button class="btn btn-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="window.databaseManager.openModal('trainers')">+ Trainer</button>
       `;
     }
     html += `

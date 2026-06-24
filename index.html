@@ -85,11 +85,10 @@
       <div id="tab-leads" class="tab-pane">
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Leads Tracker</h3>
-            <div>
-              <button class="btn btn-secondary hidden" id="btn-import-leads" style="margin-right: 8px;">Import Leads</button>
-              <button class="btn btn-primary" id="btn-add-lead">+ Add Lead</button>
-            </div>
+              <h3>Leads Tracker</h3>
+              <div>
+                <button class="btn btn-primary" id="btn-add-lead">+ Add Lead</button>
+              </div>
           </div>
           <p>Presales tracking and lead management.</p>
 
@@ -230,7 +229,6 @@
             <p>Fulfill client needs.</p>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary hidden" id="btn-import-reqs">Import Requirements</button>
             <button class="btn btn-primary" onclick="window.requirementsManager.openRequirementModal()">+ Add Requirement</button>
           </div>
         </div>
@@ -314,7 +312,6 @@
             <p>Delivery, finance, and post-sales tracking.</p>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" id="btn-deals-convert-req" onclick="window.dealsManager.convertFromRequirement()">Convert from Requirement</button>
             <button class="btn btn-primary" onclick="window.dealsManager.openDealModal()">+ Add Deal</button>
           </div>
         </div>
@@ -807,10 +804,12 @@
 
         <div class="card" style="margin-top: 16px;" id="sourcing-tracker-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
-            <h4>3. Sourcing Tracker</h4>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.openCandidateModal(null, 'Trainer')">+ Add Trainer</button>
-              <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.openCandidateModal(null, 'Vendor')">+ Add Vendor</button>
+            <div style="margin-top: 16px;">
+              <h4>3. Sourcing Tracker</h4>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.openCandidateModal(null, 'Trainer')">+ Add Trainer Candidate</button>
+                <button type="button" class="btn btn-secondary" onclick="window.requirementsManager.openCandidateModal(null, 'Vendor')">+ Add Vendor Candidate</button>
+              </div>
             </div>
           </div>
           <div class="table-container">
@@ -1096,7 +1095,7 @@
           <!-- SOP Quick Actions -->
           <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-session')">Add Delivery Schedule</button>
           <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-booking')">Add Booking</button>
-          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-inv-no')">Upload Invoice</button>
+          <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-inv-no')">Add Invoice</button>
           <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-tr-inv')">Upload Trainer Invoice</button>
           <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-pay-follow')">Add Payment Follow-up</button>
           <button type="button" class="btn btn-secondary" onclick="window.dealsManager.focusField('deal-fb-client')">Add Feedback</button>

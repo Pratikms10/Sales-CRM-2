@@ -53,26 +53,6 @@ class RequirementsManager {
       this.saveCandidate();
     });
 
-    // Import Requirements button
-    const importBtn = el('btn-import-reqs');
-    if (importBtn) {
-      importBtn.addEventListener('click', () => {
-        const currentUser = auth.getCurrentUser();
-        if (!currentUser || currentUser.role === 'employee') {
-          alert('Access denied');
-          return;
-        }
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        const settingsNav = document.querySelector('[data-tab="settings"]');
-        if (settingsNav) settingsNav.classList.add('active');
-        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-        document.getElementById('tab-settings').classList.add('active');
-        document.getElementById('page-title').textContent = 'Settings';
-        const sel = document.getElementById('import-collection');
-        if (sel) sel.value = 'requirements';
-        if (window.settingsManager) window.settingsManager.render();
-      });
-    }
 
     // Req table delegation
     const reqTbody = el('req-table-body');
@@ -142,13 +122,6 @@ class RequirementsManager {
     if (!user) return;
     let reqs = db.getRecords('requirements', user);
     const allCandidates = db.getRecords('sourcingCandidates', user);
-
-    // Import button visibility
-    const importBtn = document.getElementById('btn-import-reqs');
-    if (importBtn) {
-      if (user.role === 'employee') importBtn.classList.add('hidden');
-      else importBtn.classList.remove('hidden');
-    }
 
     tbody.innerHTML = '';
 
