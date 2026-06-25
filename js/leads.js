@@ -71,9 +71,38 @@ class LeadsManager {
     const addBtn = document.getElementById('btn-add-lead');
     if (addBtn) addBtn.addEventListener('click', () => this.openLeadModal());
 
-    // Top New button
+    // Top New button mirrors Dashboard quick-create menu.
     const newTopBtn = document.getElementById('ld-btn-new-top');
-    if (newTopBtn) newTopBtn.addEventListener('click', () => this.openLeadModal());
+    const newDropdown = document.getElementById('ld-new-dropdown');
+    if (newTopBtn && newDropdown) {
+      newTopBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        newDropdown.classList.toggle('hidden');
+      });
+
+      newDropdown.addEventListener('click', (e) => {
+        const item = e.target.closest('[data-action]');
+        if (!item) return;
+
+        const user = auth.getCurrentUser();
+        if (!user) return;
+
+        const isManager = user.role === 'manager';
+        const isTeamLead = user.role === 'team_lead';
+        const action = item.getAttribute('data-action');
+        newDropdown.classList.add('hidden');
+
+        if (action === 'add-lead') this.openLeadModal();
+        if (action === 'add-requirement' && window.requirementsManager) window.requirementsManager.openRequirementModal();
+        if (action === 'add-deal' && window.dealsManager) window.dealsManager.openDealModal();
+        if (action === 'add-contact' && window.databaseManager && (isManager || isTeamLead)) window.databaseManager.openModal('contacts');
+        if (action === 'add-trainer' && window.databaseManager && (isManager || isTeamLead)) window.databaseManager.openModal('trainers');
+      });
+
+      document.addEventListener('click', () => {
+        if (!newDropdown.classList.contains('hidden')) newDropdown.classList.add('hidden');
+      });
+    }
 
     // Import buttons
     const importBtn1 = document.getElementById('ld-btn-import');
