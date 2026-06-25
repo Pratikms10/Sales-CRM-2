@@ -18,7 +18,8 @@ window.crmSchema = {
       'service_interest', 'source', 'last_contact_date', 'next_follow_up_date',
       'follow_up_type', 'last_discussion', 'remarks', 'priority',
       'pipeline_stage', 'converted_requirement_id', 'converted_client_id',
-      'visiting_card_ref', 'requirement_note_ref', 'email_screenshot_ref', 'reference_document_ref'
+      'visiting_card_ref', 'requirement_note_ref', 'email_screenshot_ref', 'reference_document_ref',
+      'first_call_date', 'first_call_status', 'second_call_date', 'second_call_status'
     ],
     duplicateKeys: ['email', 'phone', 'company_name', 'linkedin']
   },

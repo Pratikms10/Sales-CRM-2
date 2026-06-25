@@ -8,7 +8,9 @@ class LeadsManager {
     this.filterService = '';
     this.filterSource = '';
     this.filterOwner = '';
-    this.filterDate = '';
+    this.filterFirstCall = '';
+    this.filterSecondCall = '';
+    this.selectedLeadId = null;
 
     this.bindEvents();
   }
@@ -24,111 +26,203 @@ class LeadsManager {
       .replace(/'/g, "&#039;");
   }
 
+  formatDate(value) {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (isNaN(d)) return '-';
+    return d.toLocaleDateString();
+  }
+
   bindEvents() {
-    document.getElementById('lead-search').addEventListener('input', (e) => {
+    // Global search in filter area
+    const searchEl = document.getElementById('lead-search');
+    if (searchEl) searchEl.addEventListener('input', (e) => {
       this.searchQuery = e.target.value.toLowerCase();
       this.render();
     });
 
-    document.getElementById('lead-filter-status').addEventListener('change', (e) => {
-      this.filterStatus = e.target.value;
+    // Top search syncs to global search
+    const topSearch = document.getElementById('ld-top-search');
+    if (topSearch) topSearch.addEventListener('input', (e) => {
+      this.searchQuery = e.target.value.toLowerCase();
+      if (searchEl) searchEl.value = e.target.value;
       this.render();
     });
 
-    document.getElementById('lead-filter-priority').addEventListener('change', (e) => {
-      this.filterPriority = e.target.value;
-      this.render();
-    });
+    // Filters
+    const bind = (id, prop, event = 'change') => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener(event, (e) => { this[prop] = e.target.value; this.render(); });
+    };
+    bind('lead-filter-status', 'filterStatus');
+    bind('lead-filter-priority', 'filterPriority');
+    bind('lead-filter-overdue', 'filterOverdue');
+    bind('lead-filter-service', 'filterService');
+    bind('lead-filter-source', 'filterSource');
+    bind('lead-filter-owner', 'filterOwner', 'input');
+    bind('lead-filter-first-call', 'filterFirstCall');
+    bind('lead-filter-second-call', 'filterSecondCall');
 
-    document.getElementById('lead-filter-overdue').addEventListener('change', (e) => {
-      this.filterOverdue = e.target.value;
-      this.render();
-    });
+    // Clear filters
+    const clearBtn = document.getElementById('ld-btn-clear-filters');
+    if (clearBtn) clearBtn.addEventListener('click', () => this.clearFilters());
 
-    document.getElementById('lead-filter-service').addEventListener('change', (e) => {
-      this.filterService = e.target.value;
-      this.render();
-    });
+    // Add lead button
+    const addBtn = document.getElementById('btn-add-lead');
+    if (addBtn) addBtn.addEventListener('click', () => this.openLeadModal());
 
-    document.getElementById('lead-filter-source').addEventListener('change', (e) => {
-      this.filterSource = e.target.value;
-      this.render();
-    });
+    // Top New button
+    const newTopBtn = document.getElementById('ld-btn-new-top');
+    if (newTopBtn) newTopBtn.addEventListener('click', () => this.openLeadModal());
 
-    document.getElementById('lead-filter-date').addEventListener('change', (e) => {
-      this.filterDate = e.target.value;
-      this.render();
-    });
-
-    document.getElementById('lead-filter-owner').addEventListener('input', (e) => {
-      this.filterOwner = e.target.value.toLowerCase();
-      this.render();
-    });
-
-    document.getElementById('btn-add-lead').addEventListener('click', () => {
-      this.openLeadModal();
-    });
-
-    this.tableBody.addEventListener('click', (e) => {
-      const btn = e.target.closest('.action-btn');
-      if (btn) {
-        const action = btn.getAttribute('data-action');
-        const leadId = btn.getAttribute('data-lead-id');
-        if (action === 'edit') this.openLeadModal(leadId);
-        else if (action === 'log') this.openActivityModal(leadId);
-        else if (action === 'to-req') this.convertToRequirement(leadId);
-        else if (action === 'to-client') this.convertToClient(leadId);
+    // Import buttons
+    const importBtn1 = document.getElementById('ld-btn-import');
+    const importBtn2 = document.getElementById('ld-btn-import2');
+    const importHandler = () => {
+      if (window.importManager && window.importManager.showImportUI) {
+        window.importManager.showImportUI('leads');
+      } else {
+        alert('Import system not available.');
       }
-    });
+    };
+    if (importBtn1) importBtn1.addEventListener('click', importHandler);
+    if (importBtn2) importBtn2.addEventListener('click', importHandler);
 
-    this.tableBody.addEventListener('change', (e) => {
-      if (e.target.classList.contains('quick-action-select')) {
-        const action = e.target.value;
-        const leadId = e.target.getAttribute('data-lead-id');
-        this.handleQuickAction(leadId, action);
-        e.target.value = '';
-      }
-    });
+    // Export buttons
+    const exportBtn1 = document.getElementById('ld-btn-export');
+    const exportBtn2 = document.getElementById('ld-btn-export2');
+    const exportHandler = () => this.exportLeads();
+    if (exportBtn1) exportBtn1.addEventListener('click', exportHandler);
+    if (exportBtn2) exportBtn2.addEventListener('click', exportHandler);
 
-    document.getElementById('btn-close-lead-modal').addEventListener('click', () => {
+    // Table delegation: row click, action menu, action items
+    if (this.tableBody) {
+      this.tableBody.addEventListener('click', (e) => {
+        // CRM Actions button
+        const actionsBtn = e.target.closest('.ld-actions-btn');
+        if (actionsBtn) {
+          e.stopPropagation();
+          this.toggleActionMenu(actionsBtn);
+          return;
+        }
+
+        // Action menu item
+        const menuItem = e.target.closest('.ld-action-item');
+        if (menuItem) {
+          e.stopPropagation();
+          const action = menuItem.getAttribute('data-action');
+          const leadId = menuItem.getAttribute('data-lead-id');
+          this.handleAction(action, leadId);
+          this.closeAllMenus();
+          return;
+        }
+
+        // Clickable links should not open drawer
+        if (e.target.closest('a')) return;
+
+        // Row click opens drawer
+        const row = e.target.closest('tr[data-lead-id]');
+        if (row) {
+          const leadId = row.getAttribute('data-lead-id');
+          this.openDrawer(leadId);
+        }
+      });
+    }
+
+    // Close menus on outside click
+    document.addEventListener('click', () => this.closeAllMenus());
+
+    // Lead modal close
+    const closeModal = document.getElementById('btn-close-lead-modal');
+    if (closeModal) closeModal.addEventListener('click', () => {
       document.getElementById('modal-lead').classList.add('hidden');
     });
 
-    document.getElementById('btn-close-activity-modal').addEventListener('click', () => {
+    // Activity modal close
+    const closeActivity = document.getElementById('btn-close-activity-modal');
+    if (closeActivity) closeActivity.addEventListener('click', () => {
       document.getElementById('modal-activity').classList.add('hidden');
     });
 
-    document.getElementById('form-lead').addEventListener('submit', (e) => {
+    // Lead form submit
+    const form = document.getElementById('form-lead');
+    if (form) form.addEventListener('submit', (e) => {
       e.preventDefault();
       this.saveLead();
     });
 
-    document.getElementById('form-activity').addEventListener('submit', (e) => {
+    // Activity form submit
+    const actForm = document.getElementById('form-activity');
+    if (actForm) actForm.addEventListener('submit', (e) => {
       e.preventDefault();
       this.saveActivity();
     });
+
+    // Drawer close
+    const drawerOverlay = document.getElementById('ld-drawer-overlay');
+    if (drawerOverlay) drawerOverlay.addEventListener('click', () => this.closeDrawer());
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const drawer = document.getElementById('ld-drawer');
+      if (drawer && !drawer.classList.contains('hidden')) this.closeDrawer();
+    });
   }
 
+  clearFilters() {
+    this.searchQuery = '';
+    this.filterStatus = '';
+    this.filterPriority = '';
+    this.filterOverdue = '';
+    this.filterService = '';
+    this.filterSource = '';
+    this.filterOwner = '';
+    this.filterFirstCall = '';
+    this.filterSecondCall = '';
+
+    const ids = ['lead-search', 'ld-top-search', 'lead-filter-owner'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const selects = ['lead-filter-status', 'lead-filter-priority', 'lead-filter-overdue',
+      'lead-filter-service', 'lead-filter-source', 'lead-filter-first-call', 'lead-filter-second-call'];
+    selects.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+    this.render();
+  }
+
+  // ============================================================
+  //  RENDER TABLE
+  // ============================================================
   render() {
     if (!this.tableBody) return;
-
     const user = auth.getCurrentUser();
     if (!user) return;
+
+    // Populate profile chip
+    const profileChip = document.getElementById('ld-profile-chip');
+    if (profileChip) {
+      const initial = (user.name || user.id || 'U').charAt(0).toUpperCase();
+      const displayName = user.name || user.id || 'User';
+      profileChip.innerHTML = `
+        <div class="ld-profile-avatar">${this.escapeHTML(initial)}</div>
+        <span>${this.escapeHTML(displayName)}</span>
+      `;
+    }
 
     let leads = db.getRecords('leads', user);
 
     // Apply filters
     leads = leads.filter(l => {
-      if (this.filterStatus && l.status !== this.filterStatus) return false;
-      if (this.filterPriority && l.priority !== this.filterPriority) return false;
-      if (this.filterService && l.service_interest !== this.filterService) return false;
-      if (this.filterSource && l.source !== this.filterSource) return false;
+      if (this.filterStatus && (l.status || '') !== this.filterStatus) return false;
+      if (this.filterPriority && (l.priority || '') !== this.filterPriority) return false;
+      if (this.filterService && (l.service_interest || '') !== this.filterService) return false;
+      if (this.filterSource && (l.source || '') !== this.filterSource) return false;
+      if (this.filterFirstCall && (l.first_call_status || '') !== this.filterFirstCall) return false;
+      if (this.filterSecondCall && (l.second_call_status || '') !== this.filterSecondCall) return false;
 
-      if (this.filterOwner && l.owner_id) {
-        if (!l.owner_id.toLowerCase().includes(this.filterOwner)) return false;
+      if (this.filterOwner) {
+        const oid = (l.owner_id || '').toLowerCase();
+        if (!oid.includes(this.filterOwner.toLowerCase())) return false;
       }
-
-      if (this.filterDate && l.next_follow_up_date !== this.filterDate) return false;
 
       if (this.filterOverdue === 'overdue') {
         if (!l.next_follow_up_date) return false;
@@ -137,84 +231,385 @@ class LeadsManager {
       }
 
       if (this.searchQuery) {
-        const text = `${l.company_name} ${l.contact_person} ${l.email} ${l.phone} ${l.linkedin}`.toLowerCase();
+        const text = `${l.id || ''} ${l.company_name || ''} ${l.contact_person || ''} ${l.email || ''} ${l.phone || ''} ${l.linkedin || ''} ${l.owner_id || ''}`.toLowerCase();
         if (!text.includes(this.searchQuery)) return false;
       }
 
       return true;
     });
 
-    let html = '';
     const today = new Date(new Date().setHours(0,0,0,0));
 
+    let html = '';
     leads.forEach(lead => {
-      let followUpHtml = lead.next_follow_up_date || '-';
+      const isSelected = this.selectedLeadId === lead.id;
+      const rowClass = isSelected ? 'ld-row ld-row-selected' : 'ld-row';
+
+      // Status badge
+      const statusBadge = this.renderStatusBadge(lead.status);
+      const priorityBadge = this.renderPriorityBadge(lead.priority);
+
+      // Clickable fields
+      const emailHtml = lead.email && lead.email !== '-'
+        ? `<a href="mailto:${this.escapeHTML(lead.email)}" class="ld-link">${this.escapeHTML(lead.email)}</a>`
+        : '-';
+      const phoneHtml = lead.phone && lead.phone !== '-'
+        ? `<a href="tel:${this.escapeHTML(lead.phone)}" class="ld-link">${this.escapeHTML(lead.phone)}</a>`
+        : '-';
+      const linkedinHtml = lead.linkedin && lead.linkedin !== '-'
+        ? `<a href="${this.escapeHTML(lead.linkedin)}" target="_blank" rel="noopener noreferrer" class="ld-link">Profile</a>`
+        : '-';
+      const websiteHtml = lead.website && lead.website !== '-'
+        ? `<a href="${this.escapeHTML(lead.website)}" target="_blank" rel="noopener noreferrer" class="ld-link">Visit</a>`
+        : '-';
+
+      // Follow-up display
+      let followUpHtml = this.escapeHTML(lead.follow_up_type || '-');
       if (lead.next_follow_up_date) {
         const fuDate = new Date(lead.next_follow_up_date);
         if (fuDate < today && lead.status !== 'Converted' && lead.status !== 'Lost' && lead.status !== 'Dormant') {
-          followUpHtml = `<span class="badge badge-overdue">${this.escapeHTML(lead.next_follow_up_date)}</span>`;
+          followUpHtml = `<span class="ld-badge-overdue">${this.escapeHTML(lead.follow_up_type || 'Overdue')}</span>`;
         }
       }
 
-      let priorityHtml = lead.priority || '-';
-      if (lead.priority) {
-        let safeClass = 'default';
-        const lowerPri = lead.priority.toLowerCase();
-        if (['high', 'medium', 'low'].includes(lowerPri)) safeClass = lowerPri;
-        priorityHtml = `<span class="badge badge-priority-${safeClass}">${this.escapeHTML(lead.priority)}</span>`;
-      }
-
       html += `
-        <tr>
-          <td>
-            <div style="display:flex; flex-direction: column; gap:4px; padding-bottom: 4px;">
-              <button class="btn btn-secondary action-btn" data-action="edit" data-lead-id="${this.escapeHTML(lead.id)}" style="padding: 2px 6px; font-size: 11px;">Edit</button>
-              <button class="btn btn-secondary action-btn" data-action="log" data-lead-id="${this.escapeHTML(lead.id)}" style="padding: 2px 6px; font-size: 11px;">Log Activity</button>
-              ${lead.status !== 'Converted' ? `
-                <button class="btn btn-primary action-btn" data-action="to-req" data-lead-id="${this.escapeHTML(lead.id)}" style="padding: 2px 6px; font-size: 11px;">To Requirement</button>
-                <button class="btn btn-secondary action-btn" data-action="to-client" data-lead-id="${this.escapeHTML(lead.id)}" style="padding: 2px 6px; font-size: 11px;">To Client</button>
-              ` : ''}
-              <select class="quick-action-select" data-lead-id="${this.escapeHTML(lead.id)}" style="font-size: 11px; padding: 2px; width: 100px;">
-                <option value="">Quick Actions</option>
-                <option value="followup">Add Follow-up</option>
-                ${(user.role === 'manager' || user.role === 'team_lead') ? '<option value="assign">Assign Owner</option>' : ''}
-                <option value="dormant">Mark Dormant</option>
-                <option value="lost">Mark Lost</option>
-              </select>
-            </div>
-          </td>
-          <td><small>${this.escapeHTML(lead.id)}</small></td>
-          <td>${this.escapeHTML(lead.company_name)}</td>
+        <tr class="${rowClass}" data-lead-id="${this.escapeHTML(lead.id)}">
+          <td class="ld-sticky-left ld-cell-id">${this.escapeHTML(lead.id)}</td>
+          <td>${this.escapeHTML(lead.owner_id)}</td>
+          <td class="ld-cell-company">${this.escapeHTML(lead.company_name)}</td>
           <td>${this.escapeHTML(lead.contact_person)}</td>
           <td>${this.escapeHTML(lead.designation)}</td>
-          <td>${this.escapeHTML(lead.email)}</td>
-          <td>${this.escapeHTML(lead.phone)}</td>
-          <td>${this.escapeHTML(lead.linkedin)}</td>
-          <td>${this.escapeHTML(lead.website)}</td>
+          <td>${emailHtml}</td>
+          <td>${phoneHtml}</td>
+          <td>${linkedinHtml}</td>
+          <td>${websiteHtml}</td>
           <td>${this.escapeHTML(lead.industry)}</td>
           <td>${this.escapeHTML(lead.company_size)}</td>
           <td>${this.escapeHTML(lead.city)}</td>
           <td>${this.escapeHTML(lead.country)}</td>
           <td>${this.escapeHTML(lead.service_interest)}</td>
           <td>${this.escapeHTML(lead.source)}</td>
-          <td>${this.escapeHTML(lead.status)}</td>
-          <td>${this.escapeHTML(lead.last_contact_date)}</td>
+          <td>${statusBadge}</td>
+          <td>${priorityBadge}</td>
+          <td>${this.formatDate(lead.first_call_date || lead.last_contact_date)}</td>
+          <td>${this.escapeHTML(lead.first_call_status)}</td>
+          <td>${this.formatDate(lead.second_call_date)}</td>
+          <td>${this.escapeHTML(lead.second_call_status)}</td>
           <td>${followUpHtml}</td>
-          <td>${this.escapeHTML(lead.follow_up_type)}</td>
-          <td>${priorityHtml}</td>
-          <td>${this.escapeHTML(lead.owner_id)}</td>
-          <td><small><b>Rem:</b> ${this.escapeHTML(lead.remarks)}<br><b>Dis:</b> ${this.escapeHTML(lead.last_discussion)}</small></td>
+          <td class="ld-cell-remarks">${this.escapeHTML(lead.remarks || lead.last_discussion)}</td>
+          <td class="ld-sticky-right ld-cell-action">
+            <div class="ld-actions-wrap">
+              <button class="ld-actions-btn" data-lead-id="${this.escapeHTML(lead.id)}">CRM Actions &#9662;</button>
+              <div class="ld-actions-menu hidden" id="ld-menu-${this.escapeHTML(lead.id)}">
+                <button class="ld-action-item" data-action="open" data-lead-id="${this.escapeHTML(lead.id)}">Open full lead</button>
+                <button class="ld-action-item" data-action="edit" data-lead-id="${this.escapeHTML(lead.id)}">Edit lead</button>
+                <button class="ld-action-item" data-action="followup" data-lead-id="${this.escapeHTML(lead.id)}">Add follow-up</button>
+                <button class="ld-action-item" data-action="assign" data-lead-id="${this.escapeHTML(lead.id)}">Assign owner</button>
+                <div class="ld-action-divider"></div>
+                <button class="ld-action-item" data-action="to-req" data-lead-id="${this.escapeHTML(lead.id)}">Convert to Requirement</button>
+                <button class="ld-action-item" data-action="to-client" data-lead-id="${this.escapeHTML(lead.id)}">Convert to Client</button>
+                <div class="ld-action-divider"></div>
+                <button class="ld-action-item ld-action-warn" data-action="dormant" data-lead-id="${this.escapeHTML(lead.id)}">Mark Dormant</button>
+                <button class="ld-action-item ld-action-danger" data-action="lost" data-lead-id="${this.escapeHTML(lead.id)}">Mark Lost</button>
+              </div>
+            </div>
+          </td>
         </tr>
       `;
     });
 
     if (leads.length === 0) {
-      html = `<tr><td colspan="22">No leads found.</td></tr>`;
+      html = '<tr><td colspan="24" class="ld-empty-row">No leads found.</td></tr>';
     }
 
     this.tableBody.innerHTML = html;
   }
 
+  renderStatusBadge(status) {
+    if (!status) return '-';
+    const map = {
+      'New': 'ld-badge-blue', 'Contacted': 'ld-badge-cyan', 'Interested': 'ld-badge-green',
+      'Follow-up': 'ld-badge-amber', 'Requirement Expected': 'ld-badge-purple',
+      'Not Interested': 'ld-badge-muted', 'Dormant': 'ld-badge-muted', 'Converted': 'ld-badge-green',
+      'Lost': 'ld-badge-red'
+    };
+    const cls = map[status] || 'ld-badge-muted';
+    return `<span class="ld-badge ${cls}">${this.escapeHTML(status)}</span>`;
+  }
+
+  renderPriorityBadge(priority) {
+    if (!priority) return '-';
+    const map = { 'High': 'ld-badge-red', 'Medium': 'ld-badge-amber', 'Low': 'ld-badge-green' };
+    const cls = map[priority] || 'ld-badge-muted';
+    return `<span class="ld-badge ${cls}">${this.escapeHTML(priority)}</span>`;
+  }
+
+  // ============================================================
+  //  ACTION MENU
+  // ============================================================
+  toggleActionMenu(btn) {
+    const leadId = btn.getAttribute('data-lead-id');
+    const menu = document.getElementById(`ld-menu-${leadId}`);
+    if (!menu) return;
+    this.closeAllMenus();
+    menu.classList.toggle('hidden');
+  }
+
+  closeAllMenus() {
+    document.querySelectorAll('.ld-actions-menu').forEach(m => m.classList.add('hidden'));
+  }
+
+  handleAction(action, leadId) {
+    const user = auth.getCurrentUser();
+    if (!user) return;
+
+    switch (action) {
+      case 'open': this.openDrawer(leadId); break;
+      case 'edit': this.openLeadModal(leadId); break;
+      case 'followup': this.openActivityModal(leadId); break;
+      case 'assign':
+        if (user.role !== 'manager' && user.role !== 'team_lead') return alert('Access Denied');
+        const newOwner = prompt('Enter new Owner ID:');
+        if (newOwner) {
+          db.updateRecord('leads', leadId, { owner_id: newOwner }, user);
+          db.logActivity('owner reassigned', `Owner changed to ${newOwner}`, 'leads', leadId, user);
+          this.render();
+        }
+        break;
+      case 'to-req': this.convertToRequirement(leadId); break;
+      case 'to-client': this.convertToClient(leadId); break;
+      case 'dormant':
+        db.updateRecord('leads', leadId, { status: 'Dormant', pipeline_stage: 'Dormant' }, user);
+        db.logActivity('status change', 'Marked as Dormant', 'leads', leadId, user);
+        this.render();
+        if (this.selectedLeadId === leadId) this.openDrawer(leadId);
+        break;
+      case 'lost':
+        db.updateRecord('leads', leadId, { status: 'Lost', pipeline_stage: 'Lost' }, user);
+        db.logActivity('status change', 'Marked as Lost', 'leads', leadId, user);
+        this.render();
+        if (this.selectedLeadId === leadId) this.openDrawer(leadId);
+        break;
+    }
+  }
+
+  // ============================================================
+  //  DRAWER
+  // ============================================================
+  openDrawer(leadId) {
+    const user = auth.getCurrentUser();
+    if (!user) return;
+    const leads = db.getRecords('leads', user);
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    this.selectedLeadId = leadId;
+    const isManager = user.role === 'manager' || user.role === 'team_lead';
+
+    const header = document.getElementById('ld-drawer-header');
+    const body = document.getElementById('ld-drawer-body');
+
+    // Header
+    header.innerHTML = `
+      <div class="ldd-top">
+        <div class="ldd-icon-block">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="ldd-top-info">
+          <div class="ldd-company">${this.escapeHTML(lead.company_name)}</div>
+          <div class="ldd-contact">${this.escapeHTML(lead.contact_person)} ${lead.designation ? '&middot; ' + this.escapeHTML(lead.designation) : ''}</div>
+          <div class="ldd-chips">
+            ${this.renderStatusBadge(lead.status)}
+            ${this.renderPriorityBadge(lead.priority)}
+            <span class="ld-badge ld-badge-muted">${this.escapeHTML(lead.owner_id || 'Unassigned')}</span>
+          </div>
+        </div>
+        <button class="ldd-close" id="ldd-close-btn">&times;</button>
+      </div>
+    `;
+
+    // Action cards
+    let actionsHtml = `<div class="ldd-actions">
+      <button class="ldd-action-card ldd-action-primary" data-action="to-req" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Convert to Requirement</span>
+      </button>
+      <button class="ldd-action-card" data-action="to-client" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Convert to Client</span>
+      </button>
+      <button class="ldd-action-card" data-action="followup" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        <span>Add Follow-up</span>
+      </button>
+      ${isManager ? `<button class="ldd-action-card" data-action="assign" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        <span>Assign Owner</span>
+      </button>` : ''}
+      <button class="ldd-action-card ldd-action-warn" data-action="dormant" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Mark Dormant</span>
+      </button>
+      <button class="ldd-action-card ldd-action-danger" data-action="lost" data-lead-id="${this.escapeHTML(lead.id)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span>Mark Lost</span>
+      </button>
+    </div>`;
+
+    // Summary cards
+    const summaryHtml = `<div class="ldd-summary-row">
+      <div class="ldd-summary-card"><div class="ldd-summary-label">Lead Stage</div><div class="ldd-summary-value">${this.escapeHTML(lead.pipeline_stage || lead.status || '-')}</div></div>
+      <div class="ldd-summary-card"><div class="ldd-summary-label">Priority</div><div class="ldd-summary-value">${this.renderPriorityBadge(lead.priority)}</div></div>
+      <div class="ldd-summary-card"><div class="ldd-summary-label">Next Action</div><div class="ldd-summary-value">${this.escapeHTML(lead.follow_up_type || 'None')}</div></div>
+    </div>`;
+
+    // Sections
+    const profileHtml = this.renderDrawerSection('Lead Profile', [
+      ['Lead ID', lead.id], ['Owner', lead.owner_id], ['Client', lead.contact_person],
+      ['Designation', lead.designation], ['Email', lead.email, 'email'], ['Phone', lead.phone, 'phone'],
+      ['LinkedIn', lead.linkedin, 'link'], ['Website', lead.website, 'link']
+    ]);
+
+    const companyHtml = this.renderDrawerSection('Company Details', [
+      ['Industry', lead.industry], ['Company Size', lead.company_size],
+      ['Headquarters', lead.city], ['Locations', lead.country],
+      ['Service Interest', lead.service_interest], ['Source', lead.source]
+    ]);
+
+    const salesHtml = this.renderDrawerSection('Sales Tracking', [
+      ['Status', lead.status], ['Priority', lead.priority],
+      ['First Call', lead.first_call_date || lead.last_contact_date, 'date'],
+      ['First Call Status', lead.first_call_status],
+      ['Second Call', lead.second_call_date, 'date'],
+      ['Second Call Status', lead.second_call_status],
+      ['Follow-up Status / Type', lead.follow_up_type],
+      ['Comments / Remarks', lead.remarks || lead.last_discussion]
+    ]);
+
+    // Activity timeline
+    const activities = db.getRecords('activities', user).filter(a => a.related_entity === 'leads' && a.related_id === leadId);
+    activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    let timelineHtml = '<div class="ldd-section"><h4 class="ldd-section-title">Activity Timeline</h4>';
+    if (activities.length === 0) {
+      timelineHtml += '<p class="ldd-empty">No activities recorded yet.</p>';
+    } else {
+      timelineHtml += '<div class="ldd-timeline">';
+      activities.slice(0, 10).forEach(a => {
+        timelineHtml += `<div class="ldd-timeline-item">
+          <span class="ldd-tl-dot"></span>
+          <div class="ldd-tl-content">
+            <div class="ldd-tl-type">${this.escapeHTML(a.type)}</div>
+            <div class="ldd-tl-desc">${this.escapeHTML(a.description)}</div>
+            <div class="ldd-tl-meta">by ${this.escapeHTML(a.created_by)}</div>
+          </div>
+          <span class="ldd-tl-time">${this.formatDate(a.created_at)}</span>
+        </div>`;
+      });
+      timelineHtml += '</div>';
+    }
+    timelineHtml += '</div>';
+
+    // Attachments
+    const attachments = [
+      ['Visiting Card', lead.visiting_card_ref],
+      ['Requirement Note', lead.requirement_note_ref],
+      ['Email Screenshot', lead.email_screenshot_ref],
+      ['Reference Document', lead.reference_document_ref]
+    ].filter(a => a[1]);
+    let attachHtml = '';
+    if (attachments.length > 0) {
+      attachHtml = '<div class="ldd-section"><h4 class="ldd-section-title">Attachments</h4><div class="ldd-attach-list">';
+      attachments.forEach(([label, val]) => {
+        attachHtml += `<div class="ldd-attach-item"><span class="ldd-attach-label">${this.escapeHTML(label)}</span><span class="ldd-attach-val">${this.escapeHTML(val)}</span></div>`;
+      });
+      attachHtml += '</div></div>';
+    }
+
+    body.innerHTML = actionsHtml + summaryHtml + profileHtml + companyHtml + salesHtml + timelineHtml + attachHtml;
+
+    // Show drawer
+    document.getElementById('ld-drawer').classList.remove('hidden');
+    document.getElementById('ld-drawer-overlay').classList.remove('hidden');
+
+    // Bind drawer events
+    const closeBtn = document.getElementById('ldd-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => this.closeDrawer());
+
+    // Drawer action cards
+    body.querySelectorAll('.ldd-action-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const action = card.getAttribute('data-action');
+        const id = card.getAttribute('data-lead-id');
+        this.handleAction(action, id);
+      });
+    });
+
+    // Highlight selected row
+    this.render();
+  }
+
+  renderDrawerSection(title, fields) {
+    let html = `<div class="ldd-section"><h4 class="ldd-section-title">${this.escapeHTML(title)}</h4><div class="ldd-fields">`;
+    fields.forEach(([label, value, type]) => {
+      let valHtml = this.escapeHTML(value);
+      if (type === 'email' && value && value !== '-') {
+        valHtml = `<a href="mailto:${this.escapeHTML(value)}" class="ld-link">${this.escapeHTML(value)}</a>`;
+      } else if (type === 'phone' && value && value !== '-') {
+        valHtml = `<a href="tel:${this.escapeHTML(value)}" class="ld-link">${this.escapeHTML(value)}</a>`;
+      } else if (type === 'link' && value && value !== '-') {
+        valHtml = `<a href="${this.escapeHTML(value)}" target="_blank" rel="noopener noreferrer" class="ld-link">${this.escapeHTML(value)}</a>`;
+      } else if (type === 'date' && value) {
+        valHtml = this.formatDate(value);
+      }
+      html += `<div class="ldd-field"><span class="ldd-field-label">${this.escapeHTML(label)}</span><span class="ldd-field-value">${valHtml}</span></div>`;
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  closeDrawer() {
+    this.selectedLeadId = null;
+    const drawer = document.getElementById('ld-drawer');
+    const overlay = document.getElementById('ld-drawer-overlay');
+    if (drawer) drawer.classList.add('hidden');
+    if (overlay) overlay.classList.add('hidden');
+    this.render();
+  }
+
+  // ============================================================
+  //  EXPORT
+  // ============================================================
+  exportLeads() {
+    const user = auth.getCurrentUser();
+    if (!user) return;
+    if (user.role === 'employee') return alert('Access Denied');
+
+    let leads = db.getRecords('leads', user);
+    const headers = ['Lead ID','Owner','Company Name','Client','Designation','Email','Phone','LinkedIn','Website','Industry','Company Size','Headquarters','Locations','Service Interest','Source','Status','Priority','First Call','First Call Status','Second Call','Second Call Status','Follow-up Status / Type','Comments / Remarks'];
+    const rows = leads.map(l => [
+      l.id, l.owner_id, l.company_name, l.contact_person, l.designation,
+      l.email, l.phone, l.linkedin, l.website, l.industry, l.company_size,
+      l.city, l.country, l.service_interest, l.source, l.status, l.priority,
+      l.first_call_date || l.last_contact_date || '', l.first_call_status || '',
+      l.second_call_date || '', l.second_call_status || '',
+      l.follow_up_type || '', l.remarks || l.last_discussion || ''
+    ]);
+
+    let csv = headers.map(h => `"${h}"`).join(',') + '\n';
+    rows.forEach(r => { csv += r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(',') + '\n'; });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  //  LEAD MODAL (Add/Edit)
+  // ============================================================
   openLeadModal(leadId = null) {
     const user = auth.getCurrentUser();
     const modalTitle = document.getElementById('modal-lead-title');
@@ -250,6 +645,16 @@ class LeadsManager {
         document.getElementById('lead-service').value = lead.service_interest || '';
         document.getElementById('lead-remarks').value = lead.remarks || '';
         document.getElementById('lead-owner-id').value = lead.owner_id || '';
+
+        // New fields
+        const fcEl = document.getElementById('lead-first-call');
+        if (fcEl) fcEl.value = lead.first_call_date || '';
+        const fcsEl = document.getElementById('lead-first-call-status');
+        if (fcsEl) fcsEl.value = lead.first_call_status || '';
+        const scEl = document.getElementById('lead-second-call');
+        if (scEl) scEl.value = lead.second_call_date || '';
+        const scsEl = document.getElementById('lead-second-call-status');
+        if (scsEl) scsEl.value = lead.second_call_status || '';
 
         document.getElementById('lead-visiting-card').value = lead.visiting_card_ref || '';
         document.getElementById('lead-req-note').value = lead.requirement_note_ref || '';
@@ -316,28 +721,27 @@ class LeadsManager {
       reference_document_ref: document.getElementById('lead-ref-doc').value
     };
 
+    // New fields
+    const fcEl = document.getElementById('lead-first-call');
+    if (fcEl) leadData.first_call_date = fcEl.value;
+    const fcsEl = document.getElementById('lead-first-call-status');
+    if (fcsEl) leadData.first_call_status = fcsEl.value;
+    const scEl = document.getElementById('lead-second-call');
+    if (scEl) leadData.second_call_date = scEl.value;
+    const scsEl = document.getElementById('lead-second-call-status');
+    if (scsEl) leadData.second_call_status = scsEl.value;
+
     const requestedOwner = document.getElementById('lead-owner-id').value;
-    if (requestedOwner) {
-      leadData.owner_id = requestedOwner;
-    }
+    if (requestedOwner) leadData.owner_id = requestedOwner;
 
     const defaultMapping = {
-      'New': 'Prospecting',
-      'Contacted': 'Outreach',
-      'Interested': 'Follow-up',
-      'Follow-up': 'Follow-up',
-      'Requirement Expected': 'Requirement Gathering',
-      'Not Interested': 'Lost',
-      'Dormant': 'Dormant',
-      'Converted': 'Converted',
-      'Lost': 'Lost'
+      'New': 'Prospecting', 'Contacted': 'Outreach', 'Interested': 'Follow-up',
+      'Follow-up': 'Follow-up', 'Requirement Expected': 'Requirement Gathering',
+      'Not Interested': 'Lost', 'Dormant': 'Dormant', 'Converted': 'Converted', 'Lost': 'Lost'
     };
 
     let oldLead = null;
-    if (leadId) {
-      oldLead = db.getRecords('leads', user).find(l => l.id === leadId);
-    }
-
+    if (leadId) oldLead = db.getRecords('leads', user).find(l => l.id === leadId);
     if (!leadId || (oldLead && oldLead.status !== leadData.status)) {
       leadData.pipeline_stage = defaultMapping[leadData.status] || 'Prospecting';
     }
@@ -353,7 +757,7 @@ class LeadsManager {
     if (leadData.next_follow_up_date && leadData.status !== 'Converted' && leadData.status !== 'Lost') {
       db.createRecord('tasks', {
         title: `Follow up with ${leadData.company_name}`,
-        description: `Scheduled via Lead Edit.`,
+        description: 'Scheduled via Lead Edit.',
         due_date: leadData.next_follow_up_date,
         related_to: finalLeadId,
         priority: leadData.priority,
@@ -366,6 +770,9 @@ class LeadsManager {
     if (window.renderDashboard) window.renderDashboard();
   }
 
+  // ============================================================
+  //  ACTIVITY MODAL
+  // ============================================================
   openActivityModal(leadId) {
     document.getElementById('form-activity').reset();
     document.getElementById('activity-lead-id').value = leadId;
@@ -379,7 +786,6 @@ class LeadsManager {
     const desc = document.getElementById('activity-desc').value;
 
     db.logActivity(type, desc, 'leads', leadId, user);
-
     db.updateRecord('leads', leadId, {
       last_discussion: `${type}: ${desc}`,
       last_contact_date: new Date().toISOString().split('T')[0]
@@ -387,8 +793,12 @@ class LeadsManager {
 
     document.getElementById('modal-activity').classList.add('hidden');
     this.render();
+    if (this.selectedLeadId === leadId) this.openDrawer(leadId);
   }
 
+  // ============================================================
+  //  CONVERSIONS (preserved from original)
+  // ============================================================
   convertToRequirement(leadId) {
     const user = auth.getCurrentUser();
     const leads = db.getRecords('leads', user);
@@ -405,13 +815,8 @@ class LeadsManager {
       (c.company_name && c.company_name.toLowerCase() === lead.company_name.toLowerCase()) ||
       (c.website && lead.website && c.website.toLowerCase() === lead.website.toLowerCase())
     );
-
     if (!client) {
-      client = db.createRecord('clients', {
-        company_name: lead.company_name,
-        industry: lead.industry,
-        website: lead.website
-      }, user);
+      client = db.createRecord('clients', { company_name: lead.company_name, industry: lead.industry, website: lead.website }, user);
     }
 
     const contacts = db.getRecords('contacts', {role: 'manager'});
@@ -420,47 +825,26 @@ class LeadsManager {
       (c.phone && lead.phone && c.phone === lead.phone) ||
       (c.linkedin && lead.linkedin && c.linkedin.toLowerCase() === lead.linkedin.toLowerCase())
     );
-
     if (!contact) {
       let fName = lead.contact_person || 'Unknown';
       let lName = '';
-      if (fName.includes(' ')) {
-        const parts = fName.split(' ');
-        fName = parts[0];
-        lName = parts.slice(1).join(' ');
-      }
-
+      if (fName.includes(' ')) { const parts = fName.split(' '); fName = parts[0]; lName = parts.slice(1).join(' '); }
       contact = db.createRecord('contacts', {
-        first_name: fName,
-        last_name: lName,
-        email: lead.email,
-        phone: lead.phone,
-        linkedin: lead.linkedin,
-        client_id: client.id,
-        job_title: lead.designation
+        first_name: fName, last_name: lName, email: lead.email, phone: lead.phone,
+        linkedin: lead.linkedin, client_id: client.id, job_title: lead.designation
       }, user);
     }
 
     const requirement = db.createRecord('requirements', {
       title: `${lead.service_interest || 'Service Request'} - ${lead.company_name}`,
       description: `Converted from Lead. Remarks: ${lead.remarks || 'None'}`,
-      client_id: client.id,
-      priority: lead.priority,
-      status: 'Open',
-      pipeline_stage: 'Requirement Gathering',
-      source: 'Lead Conversion',
-      lead_id: lead.id,
-      contact_id: contact.id,
-      company_name: lead.company_name,
-      contact_person: lead.contact_person,
-      service_interest: lead.service_interest
+      client_id: client.id, priority: lead.priority, status: 'Open',
+      pipeline_stage: 'Requirement Gathering', source: 'Lead Conversion',
+      lead_id: lead.id, contact_id: contact.id, company_name: lead.company_name,
+      contact_person: lead.contact_person, service_interest: lead.service_interest
     }, user);
 
-    db.updateRecord('leads', lead.id, {
-      status: 'Converted',
-      pipeline_stage: 'Converted',
-      converted_requirement_id: requirement.id
-    }, user);
+    db.updateRecord('leads', lead.id, { status: 'Converted', pipeline_stage: 'Converted', converted_requirement_id: requirement.id }, user);
     db.logAudit('stage_change', `Lead ${lead.id} converted to requirement ${requirement.id}`, user, lead.team_id);
 
     alert("Successfully converted to Requirement!");
@@ -483,13 +867,8 @@ class LeadsManager {
       (c.company_name && c.company_name.toLowerCase() === lead.company_name.toLowerCase()) ||
       (c.website && lead.website && c.website.toLowerCase() === lead.website.toLowerCase())
     );
-
     if (!client) {
-      client = db.createRecord('clients', {
-        company_name: lead.company_name,
-        industry: lead.industry,
-        website: lead.website
-      }, user);
+      client = db.createRecord('clients', { company_name: lead.company_name, industry: lead.industry, website: lead.website }, user);
     }
 
     const contacts = db.getRecords('contacts', {role: 'manager'});
@@ -498,70 +877,21 @@ class LeadsManager {
       (c.phone && lead.phone && c.phone === lead.phone) ||
       (c.linkedin && lead.linkedin && c.linkedin.toLowerCase() === lead.linkedin.toLowerCase())
     );
-
     if (!contact) {
       let fName = lead.contact_person || 'Unknown';
       let lName = '';
-      if (fName.includes(' ')) {
-        const parts = fName.split(' ');
-        fName = parts[0];
-        lName = parts.slice(1).join(' ');
-      }
-
+      if (fName.includes(' ')) { const parts = fName.split(' '); fName = parts[0]; lName = parts.slice(1).join(' '); }
       contact = db.createRecord('contacts', {
-        first_name: fName,
-        last_name: lName,
-        email: lead.email,
-        phone: lead.phone,
-        linkedin: lead.linkedin,
-        client_id: client.id,
-        job_title: lead.designation
+        first_name: fName, last_name: lName, email: lead.email, phone: lead.phone,
+        linkedin: lead.linkedin, client_id: client.id, job_title: lead.designation
       }, user);
     }
 
-    db.updateRecord('leads', lead.id, {
-      status: 'Converted',
-      pipeline_stage: 'Converted',
-      converted_client_id: client.id
-    }, user);
-
+    db.updateRecord('leads', lead.id, { status: 'Converted', pipeline_stage: 'Converted', converted_client_id: client.id }, user);
     db.logActivity('client conversion', `Lead directly converted to Client ID: ${client.id}`, 'leads', lead.id, user);
 
     alert("Successfully converted to Client!");
     this.render();
-  }
-
-  handleQuickAction(leadId, action) {
-    if (!action) return;
-    const user = auth.getCurrentUser();
-    const leads = db.getRecords('leads', user);
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
-
-    if (action === 'dormant') {
-      db.updateRecord('leads', leadId, { status: 'Dormant', pipeline_stage: 'Dormant' }, user);
-      db.logActivity('status change', 'Marked as Dormant', 'leads', leadId, user);
-      this.render();
-    } else if (action === 'lost') {
-      db.updateRecord('leads', leadId, { status: 'Lost', pipeline_stage: 'Lost' }, user);
-      db.logActivity('status change', 'Marked as Lost', 'leads', leadId, user);
-      this.render();
-    } else if (action === 'followup') {
-      const date = prompt('Enter next follow-up date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-      if (date) {
-        db.updateRecord('leads', leadId, { next_follow_up_date: date, follow_up_type: 'Call' }, user);
-        db.logActivity('followup scheduled', `Scheduled follow-up for ${date}`, 'leads', leadId, user);
-        this.render();
-      }
-    } else if (action === 'assign') {
-      if (user.role !== 'manager' && user.role !== 'team_lead') return alert('Access Denied');
-      const newOwner = prompt('Enter new Owner ID:');
-      if (newOwner) {
-        db.updateRecord('leads', leadId, { owner_id: newOwner }, user);
-        db.logActivity('owner reassigned', `Owner changed to ${newOwner}`, 'leads', leadId, user);
-        this.render();
-      }
-    }
   }
 }
 

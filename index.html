@@ -97,68 +97,128 @@
       </div>
 
       <div id="tab-leads" class="tab-pane">
-        <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Leads Tracker</h3>
-            <div>
-              <button class="btn btn-primary" id="btn-add-lead">+ Add Lead</button>
+        <!-- Leads Top Header -->
+        <div class="ld-topbar" id="ld-topbar">
+          <h2 class="ld-topbar-title">Leads</h2>
+          <div class="ld-search-wrap">
+            <svg class="ld-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ld-search-input" id="ld-top-search" placeholder="Search Lead ID, Company, Client, Email, Phone...">
+          </div>
+          <div class="ld-topbar-controls">
+            <button class="ld-btn-new" id="ld-btn-new-top" title="New Lead">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>New</span>
+            </button>
+            <button class="ld-icon-btn" id="ld-btn-import" title="Import Leads">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="ld-icon-btn" id="ld-btn-export" title="Export Leads">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </button>
+            <button class="ld-icon-btn" title="Notifications">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </button>
+            <div class="ld-profile-chip" id="ld-profile-chip"></div>
+          </div>
+        </div>
+
+        <!-- Leads Tracker Section -->
+        <div class="ld-section">
+          <div class="ld-section-header">
+            <h3 class="ld-section-title">Leads Tracker</h3>
+            <div class="ld-section-actions">
+              <button class="btn btn-primary ld-section-btn" id="btn-add-lead">+ Add Lead</button>
+              <button class="btn btn-secondary ld-section-btn" id="ld-btn-import2">Import</button>
+              <button class="btn btn-secondary ld-section-btn" id="ld-btn-export2">Export</button>
             </div>
           </div>
-          <p>Presales tracking and lead management.</p>
 
-          <div class="filter-bar" id="leads-filter-bar">
-            <input type="text" id="lead-search" placeholder="Search company, contact, email..." style="width: 250px;">
-            <select id="lead-filter-status">
-              <option value="">All Statuses</option>
-              <option value="New">New</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Interested">Interested</option>
-              <option value="Follow-up">Follow-up</option>
-              <option value="Requirement Expected">Requirement Expected</option>
-              <option value="Not Interested">Not Interested</option>
-              <option value="Dormant">Dormant</option>
-              <option value="Converted">Converted</option>
-              <option value="Lost">Lost</option>
-            </select>
-            <select id="lead-filter-priority">
-              <option value="">All Priorities</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-            <select id="lead-filter-overdue">
-              <option value="">All Follow-ups</option>
-              <option value="overdue">Overdue Only</option>
-            </select>
-            <select id="lead-filter-service">
-              <option value="">All Services</option>
-              <option value="Corporate Training">Corporate Training</option>
-              <option value="Video Content Development">Video Content Development</option>
-              <option value="Automation Consulting">Automation Consulting</option>
-            </select>
-            <select id="lead-filter-source">
-              <option value="">All Sources</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Referral">Referral</option>
-              <option value="Website">Website</option>
-              <option value="Campaign">Campaign</option>
-              <option value="Cold Call">Cold Call</option>
-              <option value="Email">Email</option>
-              <option value="Event">Event</option>
-              <option value="Existing Database">Existing Database</option>
-            </select>
-            <input type="date" id="lead-filter-date" title="Filter by Follow-up Date" style="width: 150px;">
-            <input type="text" id="lead-filter-owner" placeholder="Filter by Owner ID" style="width: 150px;">
+          <!-- Compact Filters -->
+          <div class="ld-filters" id="ld-filters">
+            <div class="ld-filter-row">
+              <div class="ld-global-search-wrap">
+                <svg class="ld-search-icon-sm" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="ld-global-search" id="lead-search" placeholder="Global search by Lead ID, Owner, Company, Client, Email, Phone, LinkedIn...">
+              </div>
+            </div>
+            <div class="ld-filter-row">
+              <input type="text" class="ld-filter-input" id="lead-filter-owner" placeholder="Owner">
+              <select class="ld-filter-select" id="lead-filter-status">
+                <option value="">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Interested">Interested</option>
+                <option value="Follow-up">Follow-up</option>
+                <option value="Requirement Expected">Requirement Expected</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Dormant">Dormant</option>
+                <option value="Converted">Converted</option>
+                <option value="Lost">Lost</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-priority">
+                <option value="">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-overdue">
+                <option value="">All Follow-ups</option>
+                <option value="overdue">Overdue Only</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-service">
+                <option value="">All Services</option>
+                <option value="Corporate Training">Corporate Training</option>
+                <option value="Video Content Development">Video Content Development</option>
+                <option value="Automation Consulting">Automation Consulting</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-source">
+                <option value="">All Sources</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Referral">Referral</option>
+                <option value="Website">Website</option>
+                <option value="Campaign">Campaign</option>
+                <option value="Cold Call">Cold Call</option>
+                <option value="Email">Email</option>
+                <option value="Event">Event</option>
+                <option value="Existing Database">Existing Database</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-first-call">
+                <option value="">First Call</option>
+                <option value="Not Called">Not Called</option>
+                <option value="Connected">Connected</option>
+                <option value="Not Connected">Not Connected</option>
+                <option value="Call Back Later">Call Back Later</option>
+                <option value="Interested">Interested</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Requirement Expected">Requirement Expected</option>
+                <option value="No Response">No Response</option>
+                <option value="Wrong Contact">Wrong Contact</option>
+              </select>
+              <select class="ld-filter-select" id="lead-filter-second-call">
+                <option value="">Second Call</option>
+                <option value="Not Called">Not Called</option>
+                <option value="Connected">Connected</option>
+                <option value="Not Connected">Not Connected</option>
+                <option value="Call Back Later">Call Back Later</option>
+                <option value="Interested">Interested</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Requirement Expected">Requirement Expected</option>
+                <option value="No Response">No Response</option>
+                <option value="Wrong Contact">Wrong Contact</option>
+              </select>
+              <button class="ld-btn-clear" id="ld-btn-clear-filters">Clear Filters</button>
+            </div>
           </div>
 
-          <div class="sheet-container">
-            <table class="sheet-table" id="leads-sheet-table">
+          <!-- Table -->
+          <div class="ld-table-wrap" id="ld-table-wrap">
+            <table class="ld-table" id="leads-sheet-table">
               <thead>
                 <tr>
-                  <th>Action</th>
-                  <th>Lead ID</th>
-                  <th>Company</th>
-                  <th>Contact Person</th>
+                  <th class="ld-sticky-left">Lead ID</th>
+                  <th>Owner</th>
+                  <th>Company Name</th>
+                  <th>Client</th>
                   <th>Designation</th>
                   <th>Email</th>
                   <th>Phone</th>
@@ -166,23 +226,36 @@
                   <th>Website</th>
                   <th>Industry</th>
                   <th>Company Size</th>
-                  <th>City</th>
-                  <th>Country</th>
+                  <th>Headquarters</th>
+                  <th>Locations</th>
                   <th>Service Interest</th>
                   <th>Source</th>
                   <th>Status</th>
-                  <th>Last Contact</th>
-                  <th>Next Follow-up</th>
-                  <th>Follow-up Type</th>
                   <th>Priority</th>
-                  <th>Owner</th>
-                  <th>Remarks / Last Discussion</th>
+                  <th>First Call</th>
+                  <th>First Call Status</th>
+                  <th>Second Call</th>
+                  <th>Second Call Status</th>
+                  <th>Follow-up Status / Type</th>
+                  <th>Comments / Remarks</th>
+                  <th class="ld-sticky-right">Action</th>
                 </tr>
               </thead>
               <tbody id="leads-table-body">
                 <!-- Rendered by leads.js -->
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Lead Detail Drawer -->
+        <div class="ld-drawer-overlay hidden" id="ld-drawer-overlay"></div>
+        <div class="ld-drawer hidden" id="ld-drawer">
+          <div class="ld-drawer-header" id="ld-drawer-header">
+            <!-- Rendered by JS -->
+          </div>
+          <div class="ld-drawer-body" id="ld-drawer-body">
+            <!-- Rendered by JS -->
           </div>
         </div>
       </div>
@@ -744,15 +817,53 @@
               class="form-control"></div>
           <div class="form-group"><label>Next Follow-up Date</label><input type="date" id="lead-next-followup"
               class="form-control"></div>
+          <div class="form-group"><label>First Call</label><input type="date" id="lead-first-call"
+              class="form-control"></div>
           <div class="form-group">
-            <label>Follow-up Type</label>
+            <label>First Call Status</label>
+            <select id="lead-first-call-status" class="form-control">
+              <option value="">None</option>
+              <option value="Not Called">Not Called</option>
+              <option value="Connected">Connected</option>
+              <option value="Not Connected">Not Connected</option>
+              <option value="Call Back Later">Call Back Later</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Requirement Expected">Requirement Expected</option>
+              <option value="No Response">No Response</option>
+              <option value="Wrong Contact">Wrong Contact</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Second Call</label><input type="date" id="lead-second-call"
+              class="form-control"></div>
+          <div class="form-group">
+            <label>Second Call Status</label>
+            <select id="lead-second-call-status" class="form-control">
+              <option value="">None</option>
+              <option value="Not Called">Not Called</option>
+              <option value="Connected">Connected</option>
+              <option value="Not Connected">Not Connected</option>
+              <option value="Call Back Later">Call Back Later</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Requirement Expected">Requirement Expected</option>
+              <option value="No Response">No Response</option>
+              <option value="Wrong Contact">Wrong Contact</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Follow-up Status / Type</label>
             <select id="lead-followup-type" class="form-control">
               <option value="">None</option>
-              <option value="Call">Call</option>
-              <option value="Email">Email</option>
-              <option value="WhatsApp">WhatsApp</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Meeting">Meeting</option>
+              <option value="Call Follow-up">Call Follow-up</option>
+              <option value="Email Follow-up">Email Follow-up</option>
+              <option value="WhatsApp Follow-up">WhatsApp Follow-up</option>
+              <option value="Meeting Follow-up">Meeting Follow-up</option>
+              <option value="Proposal Follow-up">Proposal Follow-up</option>
+              <option value="Requirement Follow-up">Requirement Follow-up</option>
+              <option value="No Follow-up Set">No Follow-up Set</option>
+              <option value="Follow-up Completed">Follow-up Completed</option>
+              <option value="Follow-up Overdue">Follow-up Overdue</option>
             </select>
           </div>
           <div class="form-group"><label>Owner ID (optional)</label><input type="text" id="lead-owner-id"
