@@ -583,19 +583,12 @@ class LeadsManager {
         ['Reference Document URL', lead.reference_document_ref, 'text', 'reference_document_ref']
       ], isEditMode);
     } else {
-      const attachments = [
-        ['Visiting Card', lead.visiting_card_ref],
-        ['Requirement Note', lead.requirement_note_ref],
-        ['Email Screenshot', lead.email_screenshot_ref],
-        ['Reference Document', lead.reference_document_ref]
-      ].filter(a => a[1]);
-      if (attachments.length > 0) {
-        attachHtml = '<div class="ldd-section"><h4 class="ldd-section-title">Attachments</h4><div class="ldd-attach-list">';
-        attachments.forEach(([label, val]) => {
-          attachHtml += `<div class="ldd-attach-item"><span class="ldd-attach-label">${this.escapeHTML(label)}</span><span class="ldd-attach-val">${this.escapeHTML(val)}</span></div>`;
-        });
-        attachHtml += '</div></div>';
-      }
+      attachHtml = this.renderDrawerSection('Attachments', [
+        ['Visiting Card', lead.visiting_card_ref, 'link'],
+        ['Requirement Note', lead.requirement_note_ref, 'link'],
+        ['Email Screenshot', lead.email_screenshot_ref, 'link'],
+        ['Reference Document', lead.reference_document_ref, 'link']
+      ], false);
     }
 
     body.innerHTML = actionsHtml + summaryHtml + profileHtml + companyHtml + salesHtml + attachHtml + timelineHtml;
