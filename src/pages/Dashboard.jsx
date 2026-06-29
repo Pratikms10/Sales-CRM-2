@@ -68,6 +68,7 @@ export default function Dashboard() {
   // States for dropdown & drawers
   const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(null); // 'activity' | 'calendar' | 'profile' | null
+  const [focusPanel, setFocusPanel] = useState(null); // 'approvals' | 'work' | 'risks' | null
 
   const menuRef = useRef();
 
@@ -214,7 +215,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Hero */}
+      {/* Hero and KPIs */}
       <Card className="hero dash-hero">
         <div className="hero-top-row">
           <div className="pulse-strip">
@@ -271,7 +272,7 @@ export default function Dashboard() {
             <h3>Approval queue</h3>
             <p className="muted">Compact management view for decisions that unblock work.</p>
           </div>
-          <Button className="btn-secondary" onClick={() => alert('Review queue visual only for now.')}>Review queue</Button>
+          <Button className="btn-secondary" onClick={() => setFocusPanel('approvals')}>Review queue</Button>
         </div>
         <div className="approval-grid">
           <Card className="approval-card">
@@ -310,7 +311,7 @@ export default function Dashboard() {
         <div className="col-left">
           <div className="section-header">
             <h3>Today&apos;s work queue</h3>
-            <Button className="btn-secondary btn-sm" onClick={() => alert('View all visual only for now.')}>View all</Button>
+            <Button className="btn-secondary btn-sm" onClick={() => setFocusPanel('work')}>View all</Button>
           </div>
           <Card className="work-queue-card">
             {workQueue.length === 0 ? (
@@ -337,11 +338,11 @@ export default function Dashboard() {
         <div className="col-right">
           <div className="section-header">
             <h3>Risk alerts</h3>
-            <Button className="btn-secondary btn-sm" onClick={() => alert('Resolve visual only for now.')}>Resolve</Button>
+            <Button className="btn-secondary btn-sm" onClick={() => setFocusPanel('risks')}>Resolve</Button>
           </div>
           <Card className="risk-card">
             {risks.length === 0 ? (
-              <p className="muted empty-state text-green">All clear — no active risks.</p>
+              <p className="muted empty-state text-green">All clear - no active risks.</p>
             ) : (
               <div className="risk-list">
                 {risks.map((r, i) => (
@@ -354,6 +355,50 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {focusPanel && (
+        <Card className="dashboard-detail-panel">
+          <div className="section-header">
+            <div>
+              <h3>{focusPanel === 'approvals' ? 'Approval queue details' : focusPanel === 'work' ? 'Complete work queue' : 'Risk resolution list'}</h3>
+              <p className="muted">{focusPanel === 'approvals' ? 'Review pending approvals by module.' : focusPanel === 'work' ? 'All current work items visible to your role.' : 'Open risks that need follow-up.'}</p>
+            </div>
+            <Button className="btn-secondary btn-sm" onClick={() => setFocusPanel(null)}>Close</Button>
+          </div>
+          {focusPanel === 'approvals' && (
+            <div className="approval-grid">
+              {[
+                ['Proposal approval', pendingProposalApprovals.length, 'Requirements awaiting proposal approval'],
+                ['PO approval', pendingPOApprovals.length, 'Purchase orders awaiting approval'],
+                ['Invoice approval', pendingInvoiceApprovals.length, 'Invoices awaiting finance action'],
+                ['Trainer finalisation', pendingTrainerFinalisation.length, 'Deals waiting for trainer confirmation']
+              ].map(([label, count, desc]) => (
+                <div className="approval-card" key={label}>
+                  <div><div className="approval-label">{label}</div><div className="approval-count">{count} pending</div><p className="muted">{desc}</p></div>
+                </div>
+              ))}
+            </div>
+          )}
+          {focusPanel === 'work' && (
+            <div className="wq-list">
+              {workQueue.length === 0 ? <p className="muted empty-state">No pending actions for today.</p> : workQueue.map((item, i) => (
+                <div className="wq-row" key={i}>
+                  <div className={`wq-icon wq-${item.urgency}`}>{item.icon}</div>
+                  <div className="wq-body"><div className="wq-title">{item.title}</div><div className="wq-meta">{item.context}</div></div>
+                  <div className="wq-status"><span className={`badge badge-${item.urgency}`}>{item.urgency === 'overdue' ? 'Overdue' : (item.urgency === 'risk' ? 'Risk' : 'Today')}</span><span className="wq-time">{item.time}</span></div>
+                </div>
+              ))}
+            </div>
+          )}
+          {focusPanel === 'risks' && (
+            <div className="risk-list">
+              {risks.length === 0 ? <p className="muted empty-state text-green">All clear - no active risks.</p> : risks.map((r, i) => (
+                <div className={`risk-row risk-${r.level}`} key={i}><AlertIcon /> <span>{r.text}</span></div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Drawers */}
       {drawerOpen && <div className="drawer-overlay" onClick={closeDrawer}></div>}
@@ -449,9 +494,9 @@ export default function Dashboard() {
           <div className="profile-access">
             <h4>Access areas</h4>
             <p className="muted">
-              {roleLabel === 'Manager' ? 'All modules — full read/write/delete' :
-               (roleLabel === 'Team Lead' ? 'Team-scoped — read/write, no delete' :
-               'Own records — read/write only')}
+              {roleLabel === 'Manager' ? 'All modules - full read/write/delete' :
+               (roleLabel === 'Team Lead' ? 'Team-scoped - read/write, no delete' :
+               'Own records - read/write only')}
             </p>
           </div>
         </div>
