@@ -10,8 +10,8 @@ export default function AppLayout() {
   const { currentUser, logout } = useAuth();
   return <div className="app-shell">
     <aside className="sidebar">
-      <div><h1>Sales CRM</h1><p>Logged in as: {currentUser?.name}</p></div>
-      <nav>{tabs.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}</nav>
+      <div><h1>Sales CRM</h1><p>Logged in as: {currentUser?.name} ({currentUser?.role})</p></div>
+      <nav>{tabs.filter(([to]) => currentUser?.role !== 'employee' || to !== '/settings').map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}</nav>
       <button className="logout" onClick={logout}>Log Out</button>
     </aside>
     <main className="main-content"><Outlet /></main>
